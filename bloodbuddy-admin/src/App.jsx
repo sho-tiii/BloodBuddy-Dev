@@ -6,13 +6,11 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Auth inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // Admin Data States
-  const [activeTab, setActiveTab] = useState('reports'); // 'reports', 'users', 'requests', 'audit'
+  const [activeTab, setActiveTab] = useState('reports');
   const [reports, setReports] = useState([]);
   const [users, setUsers] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -45,28 +43,24 @@ export default function App() {
   };
 
   const loadAdminData = async (role) => {
-    // 1. Load Reports
     const { data: repData } = await supabase
       .from('reports')
       .select('*, reporter:reporter_id(full_name), reported:reported_user_id(full_name)')
       .order('created_at', { ascending: false });
     setReports(repData || []);
 
-    // 2. Load Profiles / Users
     const { data: usrData } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
     setUsers(usrData || []);
 
-    // 3. Load Requests
     const { data: reqData } = await supabase
       .from('blood_requests')
       .select('*, profiles(full_name)')
       .order('created_at', { ascending: false });
     setRequests(reqData || []);
 
-    // 4. Super Admin Audit Logs (US-12)
     if (role === 'super_admin') {
       const { data: logData } = await supabase
         .from('audit_logs')
@@ -99,7 +93,6 @@ export default function App() {
     }
   };
 
-  // US-11: Restrict / Reactivate User Account
   const toggleUserRestriction = async (targetUser) => {
     const newStatus = !targetUser.is_restricted;
     const { error } = await supabase
@@ -119,7 +112,6 @@ export default function App() {
     }
   };
 
-  // US-12: Super Admin Promotes/Demotes Admin
   const handleRoleChange = async (targetUser, newRole) => {
     if (profile.role !== 'super_admin') return;
     const { error } = await supabase
@@ -142,7 +134,6 @@ export default function App() {
     );
   }
 
-  // Admin Auth Gate
   if (!session) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -150,16 +141,14 @@ export default function App() {
           <div className="text-center space-y-1">
             <h1 className="text-2xl font-black text-white tracking-wide">BloodBuddy Portal</h1>
             <p className="text-xs text-rose-400 font-semibold uppercase tracking-wider">
-              Authorized Personnel Only (US-11 & US-12)
+              Authorized Personnel Only
             </p>
           </div>
-
           {authError && (
             <div className="p-3 bg-red-900/40 border border-red-500/50 rounded-lg text-red-200 text-xs">
               {authError}
             </div>
           )}
-
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Staff Email</label>
@@ -173,7 +162,7 @@ export default function App() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Security Key / Password</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Password</label>
               <input
                 type="password"
                 required
@@ -195,15 +184,12 @@ export default function App() {
     );
   }
 
-  // Deny Regular Users
   if (profile && profile.role !== 'admin' && profile.role !== 'super_admin') {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-slate-800 border border-red-800/60 rounded-xl p-6 text-center space-y-3">
           <h2 className="text-lg font-bold text-red-400">Access Denied</h2>
-          <p className="text-xs text-slate-300">
-            Your account does not possess Administrative or Super Admin credentials.
-          </p>
+          <p className="text-xs text-slate-300">Your account does not possess Administrative credentials.</p>
           <button
             onClick={() => supabase.auth.signOut()}
             className="px-4 py-2 bg-slate-700 text-white text-xs font-semibold rounded-lg hover:bg-slate-600 transition"
@@ -219,12 +205,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
-      {/* Top Navbar */}
       <header className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center font-black text-sm">
-            BB
-          </div>
+          <div className="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center font-black text-sm">BB</div>
           <div>
             <h1 className="text-base font-bold tracking-tight">BloodBuddy Administrative Portal</h1>
             <p className="text-[11px] text-slate-400">
@@ -232,7 +215,6 @@ export default function App() {
             </p>
           </div>
         </div>
-
         <div className="flex items-center space-x-4">
           <span className="text-xs text-slate-300 hidden sm:inline">{session.user.email}</span>
           <button
@@ -244,7 +226,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Navigation Tabs */}
       <div className="bg-white border-b border-slate-200 px-6 flex space-x-4">
         <button
           onClick={() => setActiveTab('reports')}
@@ -282,7 +263,6 @@ export default function App() {
         )}
       </div>
 
-      {/* Main View Area */}
       <main className="max-w-6xl w-full mx-auto p-6 flex-1 space-y-4">
         {statusMsg && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex justify-between">
@@ -291,10 +271,10 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 1: Reports (US-11) */}
+        {/* Tab 1: Reports */}
         {activeTab === 'reports' && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
-            <h2 className="text-sm font-bold text-slate-900">Incident & No-Show Moderation Signals (US-10 & US-11)</h2>
+            <h2 className="text-sm font-bold text-slate-900">Incident & No-Show Moderation Signals</h2>
             {reports.length === 0 ? (
               <p className="text-xs text-slate-400 py-6 text-center">No reports filed.</p>
             ) : (
@@ -313,9 +293,6 @@ export default function App() {
                     <p className="text-xs text-slate-700 bg-white p-2.5 rounded border border-slate-200 italic">
                       "{rep.details}"
                     </p>
-                    <p className="text-[10px] text-slate-400">
-                      Filed on: {new Date(rep.created_at).toLocaleString()}
-                    </p>
                   </div>
                 ))}
               </div>
@@ -323,63 +300,77 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 2: Users (US-11 & US-12) */}
+        {/* Tab 2: Users (with ID Verification Status Column) */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
-            <h2 className="text-sm font-bold text-slate-900">Registered Accounts (US-11 Moderation)</h2>
+            <h2 className="text-sm font-bold text-slate-900">Registered Accounts & Identity Status</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px]">
                     <th className="py-2.5">User</th>
-                    <th>Self-Reported Blood</th>
+                    <th>Blood Type</th>
+                    <th>ID Status</th>
                     <th>Role</th>
-                    <th>Status</th>
+                    <th>Account Status</th>
                     <th className="text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50">
-                      <td className="py-3 font-semibold text-slate-800">{u.full_name}</td>
-                      <td>{u.blood_type}</td>
-                      <td>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          u.role === 'super_admin' ? 'bg-purple-100 text-purple-800' : u.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          u.is_restricted ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
-                        }`}>
-                          {u.is_restricted ? 'Restricted' : 'Active'}
-                        </span>
-                      </td>
-                      <td className="text-right space-x-2">
-                        {/* US-11 Moderation: Restrict */}
-                        <button
-                          onClick={() => toggleUserRestriction(u)}
-                          className={`px-2 py-1 rounded text-[11px] font-semibold transition ${
-                            u.is_restricted ? 'bg-emerald-600 text-white' : 'bg-red-50 text-red-600 border border-red-200'
-                          }`}
-                        >
-                          {u.is_restricted ? 'Reactivate' : 'Restrict'}
-                        </button>
-
-                        {/* US-12 Super Admin Role Promotion */}
-                        {isSuperAdmin && u.id !== session.user.id && (
+                  {users.map((u) => {
+                    const idState = u.id_verification_status || 'not_submitted';
+                    return (
+                      <tr key={u.id} className="hover:bg-slate-50">
+                        <td className="py-3 font-semibold text-slate-800">{u.full_name}</td>
+                        <td>{u.blood_type}</td>
+                        <td>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            idState === 'verified'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : idState === 'pending'
+                              ? 'bg-amber-100 text-amber-800'
+                              : idState === 'rejected'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {idState === 'not_submitted' ? 'Not Started' : idState}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            u.role === 'super_admin' ? 'bg-purple-100 text-purple-800' : u.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            u.is_restricted ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {u.is_restricted ? 'Restricted' : 'Active'}
+                          </span>
+                        </td>
+                        <td className="text-right space-x-2">
                           <button
-                            onClick={() => handleRoleChange(u, u.role === 'admin' ? 'user' : 'admin')}
-                            className="px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 text-white"
+                            onClick={() => toggleUserRestriction(u)}
+                            className={`px-2 py-1 rounded text-[11px] font-semibold transition ${
+                              u.is_restricted ? 'bg-emerald-600 text-white' : 'bg-red-50 text-red-600 border border-red-200'
+                            }`}
                           >
-                            {u.role === 'admin' ? 'Demote to User' : 'Make Admin'}
+                            {u.is_restricted ? 'Reactivate' : 'Restrict'}
                           </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                          {isSuperAdmin && u.id !== session.user.id && (
+                            <button
+                              onClick={() => handleRoleChange(u, u.role === 'admin' ? 'user' : 'admin')}
+                              className="px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 text-white"
+                            >
+                              {u.role === 'admin' ? 'Demote' : 'Make Admin'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -389,7 +380,7 @@ export default function App() {
         {/* Tab 3: Requests */}
         {activeTab === 'requests' && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
-            <h2 className="text-sm font-bold text-slate-900">Platform Blood Requests Overview</h2>
+            <h2 className="text-sm font-bold text-slate-900">Platform Blood Requests</h2>
             <div className="space-y-2">
               {requests.map((req) => (
                 <div key={req.id} className="p-3 border border-slate-200 rounded-lg flex items-center justify-between text-xs">
@@ -406,10 +397,10 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 4: Super Admin Audit Logs (US-12) */}
+        {/* Tab 4: Audit Logs */}
         {activeTab === 'audit' && isSuperAdmin && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
-            <h2 className="text-sm font-bold text-slate-900">Administrative Audit Trail (US-12)</h2>
+            <h2 className="text-sm font-bold text-slate-900">Administrative Audit Trail</h2>
             <div className="space-y-2">
               {auditLogs.length === 0 ? (
                 <p className="text-xs text-slate-400 py-6 text-center">No actions logged yet.</p>
@@ -417,8 +408,7 @@ export default function App() {
                 auditLogs.map((log) => (
                   <div key={log.id} className="p-3 border border-slate-200 rounded-lg bg-slate-50 text-xs flex justify-between">
                     <div>
-                      <span className="font-bold text-slate-900">{log.action}</span> on{' '}
-                      <span className="font-semibold text-rose-600">{log.target_entity}</span>
+                      <span className="font-bold text-slate-900">{log.action}</span> on <span className="font-semibold text-rose-600">{log.target_entity}</span>
                       <p className="text-[11px] text-slate-500 mt-0.5">{log.details}</p>
                     </div>
                     <div className="text-right text-[10px] text-slate-400">

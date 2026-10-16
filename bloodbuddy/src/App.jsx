@@ -6,24 +6,28 @@ import CoordinationChat from './components/CoordinationChat';
 import ReportModal from './components/ReportModal';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', "Not provided / I don't know"];
+const BACKEND_URL = 'http://localhost:5000';
 
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
 
-  // Unauthenticated Navigation States (US-14)
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [initialIsLogin, setInitialIsLogin] = useState(true);
 
-  // Search & Match States (US-04, US-05)
+  // Search & Match
   const [searchBloodType, setSearchBloodType] = useState('All');
   const [searchCity, setSearchCity] = useState('');
   const [donors, setDonors] = useState([]);
   const [loadingDonors, setLoadingDonors] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState(null);
 
-  // Readiness Modal States (US-03)
+  // Didit Verification State
+  const [verifyingId, setVerifyingId] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+
+  // Readiness Modal
   const [showReadinessModal, setShowReadinessModal] = useState(false);
   const [readinessAnswers, setReadinessAnswers] = useState({
     wellRested: false,
@@ -33,7 +37,7 @@ export default function App() {
   });
   const [readinessError, setReadinessError] = useState('');
 
-  // Requests States (US-06, US-07, US-08, US-09, US-10)
+  // Requests
   const [requests, setRequests] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [myCreatedRequests, setMyCreatedRequests] = useState([]);
@@ -89,8 +93,9 @@ export default function App() {
     setLoadingDonors(true);
     let query = supabase
       .from('profiles')
-      .select('id, full_name, blood_type, city, is_available_donor')
+      .select('id, full_name, blood_type, city, is_available_donor, id_verification_status')
       .eq('is_available_donor', true)
+      .eq('id_verification_status', 'verified')
       .neq('blood_type', "Not provided / I don't know");
 
     if (searchBloodType !== 'All') {
@@ -134,57 +139,41 @@ export default function App() {
     setMyCreatedRequests(data || []);
   };
 
-  const handleDonorResponse = async (requestId, decision) => {
-    const updatePayload = {
-      donor_response: decision,
-      status: decision === 'accepted' ? 'matched' : 'open'
-    };
+  // Requirement: Didit Verification Trigger
+  const handleStartDiditVerification = async () => {
+    setVerificationError('');
+    setVerifyingId(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/didit/create-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: session.user.id,
+          userEmail: session.user.email,
+        }),
+      });
 
-    const { error } = await supabase
-      .from('blood_requests')
-      .update(updatePayload)
-      .eq('id', requestId);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to start verification session');
 
-    if (!error) {
-      fetchIncomingRequests();
-      fetchRequests();
+      window.location.href = result.url;
+    } catch (err) {
+      setVerificationError(err.message);
+    } finally {
+      setVerifyingId(false);
     }
   };
 
-  const handleMarkFulfilled = async (requestId) => {
-    const { error } = await supabase
-      .from('blood_requests')
-      .update({ requester_fulfilled: true, status: 'fulfilled' })
-      .eq('id', requestId);
-
-    if (!error) {
-      setNotification('Request status updated to Fulfilled.');
-      fetchMyCreatedRequests();
-      fetchRequests();
-    }
-  };
-
-  const handleDonorOutcome = async (requestId, outcome) => {
-    const { error } = await supabase
-      .from('blood_requests')
-      .update({ donor_donation_status: outcome })
-      .eq('id', requestId);
-
-    if (!error) {
-      setNotification(`Donation record updated: ${outcome === 'completed' ? 'Completed' : 'Did Not Donate'}.`);
-      fetchIncomingRequests();
-    }
-  };
-
-  const handleSearchBloodTypeChange = (e) => {
-    const newType = e.target.value;
-    setSearchBloodType(newType);
-    if (selectedDonor) setSelectedDonor(null);
-  };
-
+  // Requirement: Guard bago maging Available Donor
   const handleAvailabilityClick = () => {
     if (!profile) return;
+
     if (!profile.is_available_donor) {
+      if (profile.id_verification_status !== 'verified') {
+        setNotification('Identity Verification Required: You must verify your ID with Didit before activating donor availability.');
+        return;
+      }
+
       setReadinessAnswers({
         wellRested: false,
         noFever: false,
@@ -233,6 +222,52 @@ export default function App() {
     if (!error) setProfile({ ...profile, blood_type: newType });
   };
 
+  const handleDonorResponse = async (requestId, decision) => {
+    const { error } = await supabase
+      .from('blood_requests')
+      .update({
+        donor_response: decision,
+        status: decision === 'accepted' ? 'matched' : 'open'
+      })
+      .eq('id', requestId);
+
+    if (!error) {
+      fetchIncomingRequests();
+      fetchRequests();
+    }
+  };
+
+  const handleMarkFulfilled = async (requestId) => {
+    const { error } = await supabase
+      .from('blood_requests')
+      .update({ requester_fulfilled: true, status: 'fulfilled' })
+      .eq('id', requestId);
+
+    if (!error) {
+      setNotification('Request marked as Fulfilled.');
+      fetchMyCreatedRequests();
+      fetchRequests();
+    }
+  };
+
+  const handleDonorOutcome = async (requestId, outcome) => {
+    const { error } = await supabase
+      .from('blood_requests')
+      .update({ donor_donation_status: outcome })
+      .eq('id', requestId);
+
+    if (!error) {
+      setNotification(`Donation recorded: ${outcome === 'completed' ? 'Completed' : 'Did Not Donate'}.`);
+      fetchIncomingRequests();
+    }
+  };
+
+  const handleSearchBloodTypeChange = (e) => {
+    const newType = e.target.value;
+    setSearchBloodType(newType);
+    if (selectedDonor) setSelectedDonor(null);
+  };
+
   const initiateRequestWithDonor = (donor) => {
     setSelectedDonor(donor);
     setNewRequest(prev => ({
@@ -274,7 +309,6 @@ export default function App() {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-sm">Loading BloodBuddy...</div>;
   }
 
-  // US-14: Public Landing View when not logged in
   if (!session) {
     return (
       <>
@@ -288,7 +322,6 @@ export default function App() {
             setSearchCity(city);
           }}
         />
-
         {showAuthModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="relative w-full max-w-md">
@@ -298,7 +331,7 @@ export default function App() {
               >
                 ✕
               </button>
-              <Auth onSessionChange={setSession} defaultIsLogin={initialIsLogin} />
+              <Auth defaultIsLogin={initialIsLogin} onSessionChange={setSession} />
             </div>
           </div>
         )}
@@ -306,9 +339,11 @@ export default function App() {
     );
   }
 
-  // Authenticated Community Dashboard
+  const idStatus = profile?.id_verification_status || 'not_submitted';
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-blood-600 flex items-center justify-center text-white font-black text-lg">B</div>
@@ -333,19 +368,97 @@ export default function App() {
 
       <main className="max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {notification && (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-4 py-2.5 rounded-lg flex items-center justify-between">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2.5 rounded-lg flex items-center justify-between">
             <span>{notification}</span>
-            <button onClick={() => setNotification('')} className="font-bold text-emerald-600 ml-4">✕</button>
+            <button onClick={() => setNotification('')} className="font-bold text-amber-600 ml-4">✕</button>
           </div>
         )}
 
-        {/* Incoming Requests for Donor */}
+        {/* IDENTITY VERIFICATION CARD (Didit Integration) */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="text-base">🛡️</span>
+              <h2 className="text-sm font-bold text-slate-900">Donor Identity Verification</h2>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                idStatus === 'verified'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : idStatus === 'pending'
+                  ? 'bg-amber-100 text-amber-800'
+                  : idStatus === 'rejected'
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-slate-100 text-slate-600'
+              }`}>
+                {idStatus === 'not_submitted' ? 'Not Started' : idStatus}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 max-w-xl">
+              To safeguard the community, donors must complete identity verification via Didit before broadcasting availability.
+              {idStatus === 'verified' && profile?.id_verified_at && (
+                <span className="text-emerald-700 block mt-0.5">
+                  ✓ Verified on {new Date(profile.id_verified_at).toLocaleDateString()}
+                </span>
+              )}
+            </p>
+            {verificationError && (
+              <p className="text-xs text-red-600 mt-1">{verificationError}</p>
+            )}
+          </div>
+
+          <div>
+            {idStatus !== 'verified' ? (
+              <button
+                onClick={handleStartDiditVerification}
+                disabled={verifyingId}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-sm transition disabled:opacity-50"
+              >
+                {verifyingId ? 'Preparing Session...' : idStatus === 'rejected' ? 'Retry Verification with Didit' : 'Verify ID with Didit'}
+              </button>
+            ) : (
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                ✓ Identity Confirmed
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Donor Availability Switch */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div>
+            <span className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Your Blood Type</span>
+            <select
+              value={profile?.blood_type || "Not provided / I don't know"}
+              onChange={(e) => handleBloodTypeChange(e.target.value)}
+              className="block mt-1 text-sm font-medium border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white focus:ring-2 focus:ring-blood-500 focus:outline-none"
+            >
+              {BLOOD_TYPES.map(bt => <option key={bt} value={bt}>{bt}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="text-right">
+              <p className="text-xs font-semibold text-slate-700">Donor Availability</p>
+              <p className="text-[11px] text-slate-400">Broadcast readiness to donate</p>
+            </div>
+            <button
+              onClick={handleAvailabilityClick}
+              className={`px-4 py-2 text-xs font-semibold rounded-lg transition shadow-sm ${
+                profile?.is_available_donor 
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
+            >
+              {profile?.is_available_donor ? '✓ Available to Donate' : 'Inactive / Unavailable'}
+            </button>
+          </div>
+        </div>
+
+        {/* Incoming Requests */}
         {incomingRequests.length > 0 && (
           <div className="bg-white rounded-xl border border-blood-200 shadow-sm p-4 sm:p-5 space-y-3">
             <div className="flex items-center justify-between border-b pb-2">
               <h2 className="text-xs sm:text-sm font-bold text-blood-700 flex items-center space-x-2">
                 <span>🔔</span>
-                <span>Direct Requests For You (US-07 & US-09)</span>
+                <span>Direct Requests For You</span>
               </h2>
             </div>
             <div className="space-y-3 pt-1">
@@ -391,7 +504,7 @@ export default function App() {
           <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-3">
             <h2 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center space-x-2">
               <span>📋</span>
-              <span>Your Posted Blood Requests (US-06 & US-09)</span>
+              <span>Your Posted Blood Requests</span>
             </h2>
             <div className="space-y-3">
               {myCreatedRequests.map(req => (
@@ -421,32 +534,6 @@ export default function App() {
           </div>
         )}
 
-        {/* User Blood Type & Donor Availability Toggle */}
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-          <div>
-            <span className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Your Blood Type</span>
-            <select
-              value={profile?.blood_type || "Not provided / I don't know"}
-              onChange={(e) => handleBloodTypeChange(e.target.value)}
-              className="block mt-1 text-sm font-medium border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white focus:ring-2 focus:ring-blood-500 focus:outline-none"
-            >
-              {BLOOD_TYPES.map(bt => <option key={bt} value={bt}>{bt}</option>)}
-            </select>
-          </div>
-          <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="text-right">
-              <p className="text-xs font-semibold text-slate-700">Donor Availability</p>
-              <p className="text-[11px] text-slate-400">Broadcast readiness to donate</p>
-            </div>
-            <button
-              onClick={handleAvailabilityClick}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition shadow-sm ${profile?.is_available_donor ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
-            >
-              {profile?.is_available_donor ? '✓ Available to Donate' : 'Inactive / Unavailable'}
-            </button>
-          </div>
-        </div>
-
         {/* Selected Donor Context Banner */}
         {selectedDonor && (
           <div className="bg-blood-50 border border-blood-200 rounded-xl p-4 flex items-center justify-between">
@@ -454,7 +541,7 @@ export default function App() {
               <span className="px-2.5 py-1 text-xs font-extrabold bg-blood-600 text-white rounded-md">{selectedDonor.blood_type}</span>
               <div>
                 <p className="text-xs font-bold text-slate-900">Target Donor Selected: {selectedDonor.full_name}</p>
-                <p className="text-[11px] text-slate-500">Changing blood type filter invalidates this selection (US-05).</p>
+                <p className="text-[11px] text-slate-500">Changing blood type filter invalidates this selection.</p>
               </div>
             </div>
             <button onClick={() => setSelectedDonor(null)} className="text-xs text-blood-700 hover:underline font-semibold">Clear</button>
@@ -466,7 +553,7 @@ export default function App() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900">Find Potential Donors</h2>
-              <p className="text-xs text-slate-500">Search active donors by blood type and location</p>
+              <p className="text-xs text-slate-500">Search active verified donors by blood type and location</p>
             </div>
             <button
               onClick={() => { setSelectedDonor(null); setShowRequestModal(true); }}
@@ -504,12 +591,12 @@ export default function App() {
 
           {/* Donors Cards Grid */}
           <div className="pt-2">
-            <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider mb-2">Available Donors ({donors.length})</h3>
+            <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider mb-2">Available Verified Donors ({donors.length})</h3>
             {loadingDonors ? (
               <p className="text-xs text-slate-400 py-3">Searching donors...</p>
             ) : donors.length === 0 ? (
               <div className="text-center py-6 border border-dashed border-slate-200 rounded-lg">
-                <p className="text-xs text-slate-500">No active donors found matching the filters.</p>
+                <p className="text-xs text-slate-500">No active verified donors found matching the filters.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -517,7 +604,10 @@ export default function App() {
                   <div key={d.id} className="p-3.5 border rounded-lg border-slate-200 bg-slate-50 flex flex-col justify-between">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-xs font-bold text-slate-900">{d.full_name}</p>
+                        <div className="flex items-center space-x-1.5">
+                          <p className="text-xs font-bold text-slate-900">{d.full_name}</p>
+                          <span className="text-[10px] text-emerald-600" title="Didit Verified">✓</span>
+                        </div>
                         <p className="text-[11px] text-slate-500">{d.city || 'Caloocan'}</p>
                       </div>
                       <span className="px-2 py-0.5 text-xs font-bold text-blood-700 bg-blood-100 rounded">{d.blood_type}</span>
