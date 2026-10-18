@@ -14,7 +14,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Helper para i-check kung valid UUID (iwas-crash sa database)
+// Helper para i-check kung valid UUID
 const isValidUUID = (str) => {
   const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return regex.test(str);
@@ -28,10 +28,16 @@ app.post('/api/didit/create-session', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
+    // FIX: Nilagyan natin ng explicit return URLs para piliting bumalik ang Didit sa BloodBuddy
+    const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}?didit_return=true`;
+
     const payload = {
       workflow_id: process.env.DIDIT_WORKFLOW_ID,
       vendor_data: userId,
-      callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}`,
+      callback_url: returnUrl,
+      success_url: returnUrl,
+      error_url: returnUrl,
+      redirect_url: returnUrl,
     };
 
     if (userEmail) {
@@ -76,44 +82,31 @@ app.post('/api/didit/create-session', async (req, res) => {
   }
 });
 
-// Endpoint 2: Didit Webhook Receiver
+// Endpoint 2: Didit Webhook Receiver (For Production)
 app.post('/api/didit/webhook', async (req, res) => {
   try {
     const payload = req.body || {};
-    console.log('Natanggap na Webhook Payload:', JSON.stringify(payload, null, 2));
-
-    // Safeguard 1: Test Webhook mula sa Didit Console
+    
     if (
       payload.metadata?.test_webhook === true ||
       payload.metadata?.test_webhook === 'true' ||
       payload.vendor_data === 'test-vendor-data-123' ||
       payload['X-Didit-Test-Webhook'] === 'true'
     ) {
-      console.log('Matagumpay na natanggap ang Didit Test Event!');
       return res.status(200).json({ status: 'success', message: 'Test webhook acknowledged' });
     }
 
-    // Kunin ang User ID mula sa vendor_data
     const userId = payload.vendor_data || payload.client_user_id;
 
-    if (!userId) {
-      console.warn('Webhook received without vendor_data/userId');
-      return res.status(200).json({ message: 'Ignored: No vendor_data' });
+    if (!userId || !isValidUUID(userId)) {
+      return res.status(200).json({ message: 'Ignored non-UUID or missing vendor_data' });
     }
 
-    if (!isValidUUID(userId)) {
-      console.warn(`Ignored: vendor_data "${userId}" is not a valid UUID.`);
-      return res.status(200).json({ message: 'Ignored non-UUID vendor_data' });
-    }
-
-    // Kunin ang status ng desisyon
     const decisionStatus = payload.status || payload.decision?.status;
     const isApproved = decisionStatus === 'Approved' || decisionStatus === 'verified' || decisionStatus === 'approved';
     const newStatus = isApproved ? 'verified' : 'rejected';
 
-    const updatePayload = {
-      id_verification_status: newStatus,
-    };
+    const updatePayload = { id_verification_status: newStatus };
 
     if (isApproved) {
       updatePayload.id_verified_at = new Date().toISOString();
@@ -122,20 +115,65 @@ app.post('/api/didit/webhook', async (req, res) => {
       updatePayload.id_rejection_reason = payload.decline_reason || payload.decision?.decline_reason || 'Verification unsuccessful';
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updatePayload)
-      .eq('id', userId);
-
-    if (error) {
-      console.error('Database update failed:', error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    console.log(`User ${userId} status updated to: ${newStatus}`);
+    await supabase.from('profiles').update(updatePayload).eq('id', userId);
     res.status(200).json({ status: 'success', message: 'Profile updated' });
   } catch (err) {
-    console.error('Webhook processing error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// BAGONG ENDPOINT 3: Manual Status Checker (Crucial para sa Localhost / Fallback)
+app.post('/api/didit/check-status', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    // 1. Kunin ang session ID sa database
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('didit_session_id, id_verification_status')
+      .eq('id', userId)
+      .single();
+
+    if (!profile || !profile.didit_session_id) {
+      return res.status(404).json({ error: 'No verification session found.' });
+    }
+
+    // Kung verified na via webhook, wag nang ipagpatuloy
+    if (profile.id_verification_status === 'verified') {
+       return res.json({ status: 'verified' });
+    }
+
+    // 2. I-fetch ang actual status galing mismong Didit API
+    const response = await fetch(`https://verification.didit.me/v1/session/${profile.didit_session_id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.DIDIT_API_KEY}`,
+        'x-api-key': process.env.DIDIT_API_KEY,
+      },
+    });
+
+    const sessionData = await response.json();
+    
+    // Basahin ang decision status
+    const decisionStatus = sessionData.status || sessionData.decision?.status;
+    const isApproved = decisionStatus === 'Approved' || decisionStatus === 'verified' || decisionStatus === 'approved';
+    const isRejected = decisionStatus === 'Declined' || decisionStatus === 'rejected';
+    
+    const newStatus = isApproved ? 'verified' : (isRejected ? 'rejected' : 'pending');
+
+    // 3. I-update ang database kung may nagbago
+    if (newStatus !== profile.id_verification_status) {
+       const updatePayload = { id_verification_status: newStatus };
+       if (isApproved) {
+         updatePayload.id_verified_at = new Date().toISOString();
+         updatePayload.id_verified_by = 'Didit KYC System (Manual Sync)';
+       }
+       await supabase.from('profiles').update(updatePayload).eq('id', userId);
+    }
+
+    res.json({ status: newStatus });
+  } catch (err) {
+    console.error('Check status error:', err);
     res.status(500).json({ error: err.message });
   }
 });
