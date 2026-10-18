@@ -9,7 +9,7 @@ import CoordinationChat from './components/CoordinationChat';
 import ReportModal from './components/ReportModal';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', "Not provided / I don't know"];
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = 'https://bloodbuddy-server.onrender.com';
 
 const AVATAR_OPTIONS = [
   'bg-[#c9253a]', 'bg-[#1d7a4b]', 'bg-[#2563eb]', 'bg-[#d97706]', 'bg-[#7c3aed]', 'bg-[#db2777]', 'bg-[#1e1013]'
