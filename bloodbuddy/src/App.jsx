@@ -87,6 +87,12 @@ export default function App() {
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetStep, setResetStep] = useState(1);
   const [otpCode, setOtpCode] = useState('');
+  
+  // Password Recovery MFA States
+  const [resetMfaCode, setResetMfaCode] = useState('');
+  const [isVerifyingResetMfa, setIsVerifyingResetMfa] = useState(false);
+  const [resetMfaError, setResetMfaError] = useState('');
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -148,7 +154,6 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownRef]);
 
-  // Settings/security modals share one modal layer. Lock background scrolling and support Escape.
   const closeSettingsModals = useCallback(() => {
     if (isSavingReadiness || isSavingProfile || isEnrollingMfa || isDisablingMfa) return;
     setShowReadinessModal(false);
@@ -217,6 +222,7 @@ export default function App() {
     try {
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aalData?.currentLevel === 'aal1' && aalData?.nextLevel === 'aal2') {
+        setSession(null);
         return; 
       }
     } catch (err) {
@@ -238,9 +244,16 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecoveringPassword(true);
-        setResetStep(2); 
-        setShowPasswordModal(true);
         setShowAuthModal(false); 
+        setShowPasswordModal(true);
+
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
+          if (data?.nextLevel === 'aal2' && data?.currentLevel !== 'aal2') {
+            setResetStep('mfa');
+          } else {
+            setResetStep(2);
+          }
+        });
       } else if (event === 'SIGNED_OUT') {
         setShowAuthModal(false);
         setIsRecoveringPassword(false);
@@ -263,7 +276,6 @@ export default function App() {
     setShowAuthModal(false);
     if (newSession) {
       navigateTo('dashboard', 'my_requests');
-      // Preserve the donor selected by a guest and continue the request after login.
       if (selectedDonor) {
         setShowRequestModal(true);
       }
@@ -301,93 +313,78 @@ export default function App() {
     setRequests(data || []);
   };
 
-  
-const fetchIncomingRequests = async (userId = session?.user?.id) => {
-  if (!userId) {
-    setIncomingRequests([]);
-    return;
-  }
+  const fetchIncomingRequests = async (userId = session?.user?.id) => {
+    if (!userId) {
+      setIncomingRequests([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('blood_requests')
+      .select('*, profiles:requester_id(id, full_name)')
+      .eq('selected_donor_id', userId)
+      .order('created_at', { ascending: false });
 
-  const { data, error } = await supabase
-    .from('blood_requests')
-    .select('*, profiles:requester_id(id, full_name)')
-    .eq('selected_donor_id', userId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching incoming requests:', error);
-    return;
-  }
-
-  setIncomingRequests(data || []);
-};
-
-
-useEffect(() => {
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    setIncomingRequests([]);
-    return;
-  }
-
-  let isActive = true;
-
-  // Load requests immediately when the donor logs in.
-  fetchIncomingRequests(userId);
-
-  // Listen for new or updated requests assigned to this donor.
-  const channel = supabase
-    .channel(`donation-requests-${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'blood_requests',
-        filter: `selected_donor_id=eq.${userId}`,
-      },
-      () => {
-        if (isActive) {
-          fetchIncomingRequests(userId);
-        }
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR') {
-        console.error(
-          'Realtime subscription failed for donation requests.'
-        );
-      }
-    });
-
-  return () => {
-    isActive = false;
-    supabase.removeChannel(channel);
+    if (error) {
+      console.error('Error fetching incoming requests:', error);
+      return;
+    }
+    setIncomingRequests(data || []);
   };
-}, [session?.user?.id]);
 
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) {
+      setIncomingRequests([]);
+      return;
+    }
+    let isActive = true;
+    fetchIncomingRequests(userId);
 
+    const channel = supabase
+      .channel(`donation-requests-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'blood_requests',
+          filter: `selected_donor_id=eq.${userId}`,
+        },
+        () => {
+          if (isActive) {
+            fetchIncomingRequests(userId);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Realtime subscription failed for donation requests.');
+        }
+      });
+
+    return () => {
+      isActive = false;
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
 
   const fetchMyCreatedRequests = async (userId = session?.user?.id) => {
-  if (!userId) {
-    setMyCreatedRequests([]);
-    return;
-  }
+    if (!userId) {
+      setMyCreatedRequests([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('blood_requests')
+      .select('*, donor:selected_donor_id(id, full_name)')
+      .eq('requester_id', userId)
+      .order('created_at', { ascending: false });
 
-  const { data, error } = await supabase
-    .from('blood_requests')
-    .select('*, donor:selected_donor_id(id, full_name)')
-    .eq('requester_id', userId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching my blood requests:', error);
-    return;
-  }
-
-  setMyCreatedRequests(data || []);
-};
+    if (error) {
+      console.error('Error fetching my blood requests:', error);
+      return;
+    }
+    setMyCreatedRequests(data || []);
+  };
 
   const handleStartDiditVerification = async () => {
     setVerificationError('');
@@ -583,71 +580,77 @@ useEffect(() => {
   };
 
   const handleCreateRequest = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!session?.user?.id) {
-    showToast('Please log in to submit a blood request.', 'error');
-    return;
-  }
-
-  const { data, error } = await supabase
-    .from('blood_requests')
-    .insert([
-      {
-        requester_id: session.user.id,
-        selected_donor_id: selectedDonor ? selectedDonor.id : null,
-        ...newRequest,
-      },
-    ])
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating blood request:', error);
-    showToast(`Failed to create request: ${error.message}`, 'error');
-    return;
-  }
-
-  setShowRequestModal(false);
-  setShowReviewModal(false);
-  setSelectedDonor(null);
-
-  setNewRequest({
-    patient_name: '',
-    is_for_self: true,
-    blood_type: 'O+',
-    hospital_name: '',
-    city: 'Metro Manila',
-    contact_number: '',
-    urgency_notes: '',
-  });
-
-  await fetchMyCreatedRequests(session.user.id);
-  await fetchRequests();
-
-  navigateTo('dashboard', 'my_requests');
-  showToast('Emergency request posted successfully.', 'success');
-};
-
-  const handleSendResetPassword = async () => {
-    setIsSendingReset(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(session?.user?.email || '');
-    setIsSendingReset(false);
-    
-    if (error) {
-      showToast(error.message, 'error');
-    } else {
-      showToast('A password reset code has been sent to your email.', 'info');
-      setResetStep(1);
-      setOtpCode('');
-      setNewPassword('');
-      setConfirmNewPassword('');
-      setShowNewPassword(false);
-      setShowConfirmNewPassword(false);
-      setShowPasswordModal(true);
+    if (!session?.user?.id) {
+      showToast('Please log in to submit a blood request.', 'error');
+      return;
     }
+
+    const { data, error } = await supabase
+      .from('blood_requests')
+      .insert([
+        {
+          requester_id: session.user.id,
+          selected_donor_id: selectedDonor ? selectedDonor.id : null,
+          ...newRequest,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating blood request:', error);
+      showToast(`Failed to create request: ${error.message}`, 'error');
+      return;
+    }
+
+    setShowRequestModal(false);
+    setShowReviewModal(false);
+    setSelectedDonor(null);
+
+    setNewRequest({
+      patient_name: '',
+      is_for_self: true,
+      blood_type: 'O+',
+      hospital_name: '',
+      city: 'Metro Manila',
+      contact_number: '',
+      urgency_notes: '',
+    });
+
+    await fetchMyCreatedRequests(session.user.id);
+    await fetchRequests();
+
+    navigateTo('dashboard', 'my_requests');
+    showToast('Emergency request posted successfully.', 'success');
   };
 
+  // Direct Password Update specifically for logged in users with 5-minute cooldown
+  const handleSendResetPassword = () => {
+    if (session?.user?.id) {
+      const lastChange = localStorage.getItem(`pw_changed_${session.user.id}`);
+      if (lastChange) {
+        const timePassed = Date.now() - parseInt(lastChange, 10);
+        const cooldown = 5 * 60 * 1000; // 5 minutes in milliseconds
+        if (timePassed < cooldown) {
+          const remaining = Math.ceil((cooldown - timePassed) / 60000);
+          showToast(`For your security, please wait ${remaining} minute(s) before changing your password again.`, 'warning');
+          return;
+        }
+      }
+    }
+
+    // Skip the email & MFA step entirely since the user is already authenticated
+    setResetStep('update_direct');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+    setShowPasswordModal(true);
+  };
+
+  // This handles the OTP verification only when the user is doing Account Recovery from the Login Screen
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setIsSendingReset(true);
@@ -658,12 +661,47 @@ useEffect(() => {
     if (error) {
       showToast('Invalid or expired code. Please try again.', 'error');
     } else if (data.session) {
-      setNewPassword('');
-      setConfirmNewPassword('');
-      setShowNewPassword(false);
-      setShowConfirmNewPassword(false);
-      setResetStep(2);
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
+        setResetStep('mfa');
+      } else {
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setShowNewPassword(false);
+        setShowConfirmNewPassword(false);
+        setResetStep(2);
+      }
       setIsRecoveringPassword(true);
+    }
+  };
+
+  const handleVerifyResetMfa = async (e) => {
+    e.preventDefault();
+    setIsVerifyingResetMfa(true);
+    setResetMfaError('');
+    try {
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+      if (factorsError) throw factorsError;
+      
+      const totpFactor = factors.all.find(f => f.factor_type === 'totp' && f.status === 'verified');
+      if (!totpFactor) throw new Error('No verified authenticator factor found.');
+
+      const challenge = await supabase.auth.mfa.challenge({ factorId: totpFactor.id });
+      if (challenge.error) throw challenge.error;
+
+      const verify = await supabase.auth.mfa.verify({
+        factorId: totpFactor.id,
+        challengeId: challenge.data.id,
+        code: resetMfaCode
+      });
+      if (verify.error) throw verify.error;
+
+      setResetStep(2);
+      setResetMfaCode('');
+    } catch (err) {
+      setResetMfaError(err.message || 'Invalid authenticator code. Please try again.');
+    } finally {
+      setIsVerifyingResetMfa(false);
     }
   };
 
@@ -679,8 +717,18 @@ useEffect(() => {
     setIsSendingReset(false);
     
     if (error) {
-      showToast(error.message, 'error');
+      if (error.message.includes('AAL2') || error.message.includes('MFA')) {
+         setResetStep('mfa');
+         showToast('MFA verification is required before changing password.', 'warning');
+      } else {
+         showToast(error.message, 'error');
+      }
     } else {
+      // Success
+      if (session?.user?.id) {
+        localStorage.setItem(`pw_changed_${session.user.id}`, Date.now().toString());
+      }
+      
       setShowPasswordModal(false);
       setOtpCode('');
       setNewPassword('');
@@ -690,6 +738,9 @@ useEffect(() => {
       setResetStep(1);
       setIsRecoveringPassword(false); 
       showToast('Password updated securely.', 'success');
+
+      const { data } = await supabase.auth.getSession();
+      if (data.session) handleGlobalSession(data.session);
     }
   };
 
@@ -792,6 +843,10 @@ useEffect(() => {
       setShowMfaModal(false);
       setMfaVerifyCode('');
       showToast('Two-Factor Authentication successfully enabled!', 'success');
+
+      const { data } = await supabase.auth.getSession();
+      if (data.session) handleGlobalSession(data.session);
+
     } catch (err) {
       setMfaError('Invalid code. Please check your authenticator app and try again.');
     } finally {
@@ -894,13 +949,39 @@ useEffect(() => {
       {showPasswordModal &&
         createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
-              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[400px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.25s_ease_both]">
+              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[400px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]">
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="font-display font-bold text-[22px] text-brand-ink dark:text-[#f8ece9]">Update Password</h3>
+                  <h3 className="font-display font-bold text-[22px] text-brand-ink dark:text-[#f8ece9]">
+                    {resetStep === 'update_direct' ? 'Change Password' : 'Update Password'}
+                  </h3>
                   <button onClick={() => setShowPasswordModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
                 </div>
                 
-                {resetStep === 1 ? (
+                {resetStep === 'mfa' ? (
+                  <form onSubmit={handleVerifyResetMfa} className="space-y-4">
+                    <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] leading-relaxed">Your account has Two-Factor Authentication enabled. Please verify your identity to continue resetting your password.</p>
+                    <div>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        maxLength={6}
+                        required 
+                        value={resetMfaCode} 
+                        onChange={(e) => {
+                           const val = e.target.value.replace(/\D/g,'').slice(0,6);
+                           setResetMfaCode(val);
+                           setResetMfaError('');
+                        }} 
+                        placeholder="6-digit code" 
+                        className="w-full text-center tracking-[0.2em] font-mono text-[16px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3.5 focus:outline-none focus:border-brand-accent transition" 
+                      />
+                    </div>
+                    {resetMfaError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{resetMfaError}</p>}
+                    <button type="submit" disabled={isVerifyingResetMfa || resetMfaCode.length !== 6} className="w-full py-3.5 text-[14px] font-bold text-brand-onBtn bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 disabled:cursor-not-allowed">
+                      {isVerifyingResetMfa ? 'Verifying...' : 'Verify Authenticator'}
+                    </button>
+                  </form>
+                ) : resetStep === 1 ? (
                   <form onSubmit={handleVerifyOtp} className="space-y-4">
                     <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] leading-relaxed">We sent an 8-digit verification code to your email. Enter it below to proceed.</p>
                     <div>
@@ -912,7 +993,11 @@ useEffect(() => {
                   </form>
                 ) : (
                   <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
-                    <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] leading-relaxed">Code verified! You can now set your new password.</p>
+                    <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] leading-relaxed">
+                      {resetStep === 'update_direct' 
+                        ? 'You are securely authenticated. You can now set a new password for your account.' 
+                        : 'Identity verified! You can now set your new password.'}
+                    </p>
                     
                     <div className="relative">
                       <input type={showNewPassword ? "text" : "password"} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New strong password" className="w-full text-[14px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 pr-11 focus:outline-none focus:border-brand-accent transition" />
@@ -1331,13 +1416,17 @@ useEffect(() => {
                           <p className="text-[15.5px] font-bold text-brand-ink dark:text-[#f8ece9]">Password</p>
                           <p className="text-[13px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Secure your account credentials.</p>
                         </div>
-                        <button disabled={isSendingReset} onClick={handleSendResetPassword} className="px-3.5 py-2 text-[12.5px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-surface dark:bg-[#25141a] border border-brand-line dark:border-[#3b2328] rounded-xl hover:border-brand-accent dark:hover:border-[#ff7d8b] transition flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button 
+                          disabled={isSendingReset} 
+                          onClick={handleSendResetPassword} 
+                          className="px-3.5 py-2 text-[12.5px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-surface dark:bg-[#25141a] border border-brand-line dark:border-[#3b2328] rounded-xl hover:border-brand-accent dark:hover:border-[#ff7d8b] transition flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                           {isSendingReset ? (
                             <svg className="animate-spin w-3.5 h-3.5 text-brand-accent dark:text-[#ff7d8b]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                           ) : (
                             <svg className="w-3.5 h-3.5 text-brand-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                           )}
-                          {isSendingReset ? 'Sending Code...' : 'Change Password →'}
+                          {isSendingReset ? 'Please wait...' : 'Change Password →'}
                         </button>
                       </div>
                       <div className="flex items-center justify-between">
