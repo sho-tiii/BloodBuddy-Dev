@@ -2061,18 +2061,27 @@ export default function App() {
               </div>
             </div>
 
-            {(selectedReport.attachment_url || selectedReport.evidence_url) && (
-              <div>
-                <a
-                  href={selectedReport.attachment_url || selectedReport.evidence_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-[13.5px] font-bold text-brand-accent dark:text-[#ff7d8b] underline"
-                >
-                  Open attached evidence ↗
-                </a>
-              </div>
-            )}
+            {(selectedReport.attachment_url || selectedReport.evidence_url) && (() => {
+              const rawUrl = selectedReport.attachment_url || selectedReport.evidence_url;
+              
+              // Titingnan nito kung may "http" na ang link. Kung wala, idudugtong nito ang Supabase Storage URL mo.
+              const finalUrl = rawUrl.startsWith('http') 
+                ? rawUrl 
+                : `https://gvjmolmeelgdgbyltraie.supabase.co/storage/v1/object/public/reports/${rawUrl}`;
+
+              return (
+                <div>
+                  <a
+                    href={finalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 text-[13.5px] font-bold text-brand-accent dark:text-[#ff7d8b] underline"
+                  >
+                    Open attached evidence ↗
+                  </a>
+                </div>
+              );
+            })()}
 
             <div className="flex flex-wrap justify-end gap-3 border-t border-brand-line dark:border-[#3b2328] pt-5">
               <button
