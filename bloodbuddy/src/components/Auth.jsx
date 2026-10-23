@@ -461,9 +461,9 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
                 <div className="mt-2.5 flex items-center gap-1.5 animate-[rise_0.2s_ease_both]">
                   <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${pwScore >= 1 ? (pwScore < 3 ? 'bg-[#f2606f]' : pwScore < 4 ? 'bg-[#e8b64d]' : 'bg-[#58cf92]') : 'bg-brand-line dark:bg-[#3b2328]'}`}></div>
                   <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${pwScore >= 3 ? (pwScore < 4 ? 'bg-[#e8b64d]' : 'bg-[#58cf92]') : 'bg-brand-line dark:bg-[#3b2328]'}`}></div>
-                  <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${pwScore >= 5 ? 'bg-[#58cf92]' : 'bg-brand-line dark:bg-[#3b2328]'}`}></div>
+                  <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${pwScore >= 4 ? 'bg-[#58cf92]' : 'bg-brand-line dark:bg-[#3b2328]'}`}></div>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-brand-muted dark:text-[#c2a8a9] ml-1 w-12">
-                    {pwScore < 3 ? 'Weak' : pwScore < 5 ? 'Good' : 'Strong'}
+                    {pwScore < 3 ? 'Weak' : pwScore < 4 ? 'Good' : 'Strong'}
                   </span>
                 </div>
               )}
