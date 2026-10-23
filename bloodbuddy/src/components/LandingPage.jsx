@@ -314,6 +314,7 @@ export default function LandingPage({
   const dropdownRef = useRef(null);
 
   const [searchError, setSearchError] = useState(false);
+  const [searchQueryError, setSearchQueryError] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchExecuted, setSearchExecuted] = useState(false);
@@ -432,20 +433,55 @@ export default function LandingPage({
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
+
     if (!selectedType) {
       setSearchError(true);
+      setSearchQueryError('');
       return;
     }
+
     setSearchError(false);
+    setSearchQueryError('');
     setIsSearching(true);
     setSearchExecuted(true);
+    setSearchResults([]);
 
-    let query = supabase.from('profiles').select('id, full_name, blood_type, city').eq('is_available_donor', true).eq('id_verification_status', 'verified').eq('blood_type', selectedType);
-    if (location.trim()) query = query.ilike('city', `%${location.trim()}%`);
+    try {
+      // Only return donors who opted in and have verified ID status.
+      let query = supabase
+        .from('profiles')
+        .select('id, full_name, blood_type, city')
+        .eq('is_available_donor', true)
+        .eq('id_verification_status', 'verified')
+        .eq('blood_type', selectedType);
 
-    const { data } = await query.limit(10);
-    setSearchResults(data || []);
-    setIsSearching(false);
+      const area = location.trim();
+      if (area) {
+        query = query.ilike('city', `%${area}%`);
+      }
+
+      const { data, error } = await query.limit(10);
+
+      if (error) {
+        // Keep the interface useful while leaving the exact Supabase cause in DevTools.
+        console.error('BloodBuddy donor search failed:', error);
+        setSearchResults([]);
+        setSearchQueryError(
+          'We couldn’t search donors right now. Please try again. If this keeps happening, check the Supabase profiles table permissions and column names.'
+        );
+        return;
+      }
+
+      setSearchResults(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Unexpected BloodBuddy donor search error:', error);
+      setSearchResults([]);
+      setSearchQueryError(
+        'Something went wrong while searching. Check your connection and try again.'
+      );
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   // ---- Shared drag and drop ----
@@ -903,7 +939,12 @@ export default function LandingPage({
                         <span className="flex-none px-3 py-1 rounded-full bg-brand-blush dark:bg-[#3a1a20] text-brand-accent dark:text-[#ff7d8b] text-[12.5px] font-bold font-mono">{searchResults.length} found</span>
                       </div>
 
-                      {searchResults.length === 0 ? (
+                      {searchQueryError ? (
+                        <div className="text-center py-7 px-4 rounded-2xl border border-red-300/70 dark:border-red-900/60 bg-red-50/70 dark:bg-red-950/20">
+                          <p className="text-[14px] font-semibold text-red-700 dark:text-red-300">Search temporarily unavailable</p>
+                          <p className="text-[13.5px] text-red-700/80 dark:text-red-200/80 mt-1">{searchQueryError}</p>
+                        </div>
+                      ) : searchResults.length === 0 ? (
                         <div className="text-center py-9 px-4 rounded-2xl border border-dashed border-brand-line dark:border-[#3b2328] bg-brand-bg/60 dark:bg-[#150a0c]/60">
                           <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-brand-blush dark:bg-[#3a1a20] text-brand-accent dark:text-[#ff7d8b] flex items-center justify-center">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path strokeLinecap="round" d="m20 20-3.5-3.5M8.5 11h5"/></svg>
