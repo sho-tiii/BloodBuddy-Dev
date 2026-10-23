@@ -275,9 +275,10 @@ export default function App() {
     await handleGlobalSession(newSession);
     setShowAuthModal(false);
     if (newSession) {
-      navigateTo('dashboard', 'my_requests');
       if (selectedDonor) {
         setShowRequestModal(true);
+      } else {
+        navigateTo('dashboard', 'my_requests');
       }
     }
   };
@@ -911,6 +912,7 @@ export default function App() {
       
       <Toast message={toastData.message} type={toastData.type} onClose={closeToast} />
 
+      {/* 1. LANDING PAGE & AUTH MODAL */}
       {(!session || (isRecoveringPassword && currentRoute === 'home') || currentRoute === 'home') && (
         <>
           <LandingPage
@@ -941,13 +943,11 @@ export default function App() {
               </div>
             </div>
           )}
-          
-
         </>
       )}
 
-      {showPasswordModal &&
-        createPortal(
+      {/* 2. PASSWORD RECOVERY MODAL */}
+      {showPasswordModal && createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
               <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[400px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]">
                 <div className="flex items-center justify-between mb-5">
@@ -1031,6 +1031,7 @@ export default function App() {
           document.body
         )}
 
+      {/* 3. MAIN DASHBOARD VIEW */}
       {session && currentRoute !== 'home' && (
         <>
           <header className="sticky top-0 z-50 bg-brand-bg/90 dark:bg-[#150a0c]/90 backdrop-blur-md border-b border-brand-line dark:border-[#3b2328] transition-colors duration-300">
@@ -1047,7 +1048,7 @@ export default function App() {
               </ul>
 
               <div className="flex items-center gap-3">
-                <button onClick={toggleTheme} className="p-2 mr-1 text-brand-muted dark:text-[#c2a8a9] hover:text-brand-ink dark:hover:text-white transition">
+                <button onClick={toggleTheme} className="p-2 mr-1 text-brand-muted dark:text-[#c2a8a9] hover:text-brand-ink dark:hover:text-[#f8ece9] transition">
                   {theme === 'dark' ? (
                     <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                   ) : (
@@ -1495,282 +1496,284 @@ export default function App() {
               </div>
             )}
           </div>
-
-          {/* SETTINGS / SECURITY MODALS */}
-          {showReadinessModal && createPortal(
-            <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="readiness-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isSavingReadiness) setShowReadinessModal(false); }}>
-              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[520px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
-                <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
-                  <div><h3 id="readiness-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Donor Readiness Assessment</h3><p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Please confirm these conditions before becoming visible as an available donor.</p></div>
-                  <button type="button" onClick={() => setShowReadinessModal(false)} disabled={isSavingReadiness} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close donor readiness assessment">✕</button>
-                </div>
-                <form onSubmit={submitReadinessAssessment} className="space-y-4">
-                  <div className="space-y-3">
-                    {[
-                      ['wellRested', 'I am well-rested and feel physically fit to donate.'],
-                      ['noFever', 'I do not currently have a fever or significant illness.'],
-                      ['noRecentTattoo', 'I have not recently had a tattoo or other procedure that should temporarily prevent donation.'],
-                      ['understandsDisclaimer', 'I understand that this assessment does not replace professional medical screening.']
-                    ].map(([key, label]) => (
-                      <label key={key} className="flex items-start gap-3 p-3.5 rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] cursor-pointer">
-                        <input type="checkbox" checked={!!readinessAnswers[key]} onChange={(e) => { setReadinessAnswers(prev => ({ ...prev, [key]: e.target.checked })); if (readinessError) setReadinessError(''); }} disabled={isSavingReadiness} className="mt-0.5 w-4 h-4 accent-brand-btn flex-none" />
-                        <span className="text-[13.5px] leading-relaxed text-brand-ink dark:text-[#f8ece9]">{label}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="p-4 bg-amber-50 dark:bg-[#332610] border border-amber-200 dark:border-amber-900/50 rounded-xl"><p className="text-[12.5px] leading-relaxed text-amber-800 dark:text-[#e8b64d]">Donor availability only makes your profile discoverable to potential requesters. Final eligibility, screening, and blood compatibility must be determined by qualified healthcare professionals.</p></div>
-                  {readinessError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{readinessError}</p>}
-                  <div className="pt-2 flex justify-end gap-3">
-                    <button type="button" onClick={() => setShowReadinessModal(false)} disabled={isSavingReadiness} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button>
-                    <button type="submit" disabled={isSavingReadiness} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[180px]">{isSavingReadiness ? 'Saving...' : 'Confirm & Become Available'}</button>
-                  </div>
-                </form>
-              </div>
-            </div>, document.body
-          )}
-
-          {showEditProfileModal && createPortal(
-            <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="edit-profile-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isSavingProfile) setShowEditProfileModal(false); }}>
-              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
-                <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
-                  <div><h3 id="edit-profile-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Edit Profile</h3><p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Update the profile details you control.</p></div>
-                  <button type="button" onClick={() => setShowEditProfileModal(false)} disabled={isSavingProfile} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close edit profile dialog">✕</button>
-                </div>
-                <form onSubmit={handleSaveProfile} className="space-y-5">
-                  <div><label htmlFor="edit-full-name" className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Full Name <span className="text-brand-accent">*</span></label><input id="edit-full-name" type="text" required minLength={2} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} disabled={isSavingProfile} autoFocus className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" placeholder="Your full name" /></div>
-                  <div><p className="text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-2">Avatar Color</p><div className="flex flex-wrap gap-2.5">{AVATAR_OPTIONS.map((avatarClass) => <button key={avatarClass} type="button" aria-label={`Choose avatar color ${avatarClass.replace('bg-[', '').replace(']', '')}`} onClick={() => setEditAvatarColor(avatarClass)} disabled={isSavingProfile} className={`w-9 h-9 rounded-full ${avatarClass} transition ring-offset-2 dark:ring-offset-[#25141a] ${editAvatarColor === avatarClass ? 'ring-2 ring-brand-accent' : 'hover:scale-105'}`}>{editAvatarColor === avatarClass && <span className="text-white text-sm font-bold">✓</span>}</button>)}</div></div>
-                  <div className="pt-2 flex justify-end gap-3"><button type="button" onClick={() => setShowEditProfileModal(false)} disabled={isSavingProfile} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button><button type="submit" disabled={isSavingProfile || !editFullName.trim()} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[130px]">{isSavingProfile ? 'Saving...' : 'Save Changes'}</button></div>
-                </form>
-              </div>
-            </div>, document.body
-          )}
-
-          {showMfaModal && createPortal(
-            <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="mfa-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isEnrollingMfa) setShowMfaModal(false); }}>
-              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
-                <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5"><div><h3 id="mfa-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Set Up Two-Factor Authentication</h3><p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">{mfaStep === 1 ? 'Use an authenticator app to protect your BloodBuddy account.' : 'Scan the QR code, then verify the generated code.'}</p></div><button type="button" onClick={() => setShowMfaModal(false)} disabled={isEnrollingMfa} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close MFA setup dialog">✕</button></div>
-                {mfaStep === 1 ? <div className="space-y-5"><div className="p-4 rounded-xl bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328]"><p className="text-[13.5px] text-brand-ink dark:text-[#f8ece9] leading-relaxed">You will be shown a QR code from Supabase. Add it to an authenticator app, then enter the one-time code to finish enabling MFA.</p></div>{mfaError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{mfaError}</p>}<div className="flex justify-end gap-3"><button type="button" onClick={() => setShowMfaModal(false)} disabled={isEnrollingMfa} className="px-4 py-2.5 text-[14px] font-bold text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition">Cancel</button><button type="button" onClick={startEnrollMfa} disabled={isEnrollingMfa} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[140px]">{isEnrollingMfa ? 'Preparing...' : 'Start Setup'}</button></div></div> : <form onSubmit={verifyMfaCode} className="space-y-5"><div className="flex justify-center p-4 rounded-2xl bg-white border border-brand-line dark:border-[#3b2328]">{mfaQrCode ? <QRCodeSVG value={mfaQrCode} size={190} includeMargin /> : <div className="w-[190px] h-[190px] flex items-center justify-center text-sm text-brand-muted">QR code unavailable.</div>}</div><div><p className="text-[12.5px] text-brand-muted dark:text-[#c2a8a9] mb-2">If you cannot scan the QR code, enter this secret manually:</p><div className="flex gap-2"><code className="flex-1 min-w-0 break-all px-3 py-2.5 rounded-xl bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] text-[12px] text-brand-ink dark:text-[#f8ece9]">{mfaSecret || 'Secret unavailable'}</code><button type="button" onClick={handleCopySecret} disabled={!mfaSecret} className="px-3 py-2.5 text-[12.5px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl disabled:opacity-50">Copy</button></div></div><div><label htmlFor="mfa-code" className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">6-digit authenticator code</label><input id="mfa-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" required value={mfaVerifyCode} onChange={(e) => { const value=e.target.value.replace(/\D/g,'').slice(0,6); setMfaVerifyCode(value); if (mfaError) setMfaError(''); }} disabled={isEnrollingMfa} className="w-full text-center tracking-[0.25em] font-mono text-[18px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3.5 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" placeholder="000000" /></div>{mfaError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{mfaError}</p>}<div className="pt-2 flex justify-end gap-3"><button type="button" onClick={() => { if (isEnrollingMfa) return; setMfaStep(1); setMfaError(''); setMfaVerifyCode(''); }} disabled={isEnrollingMfa} className="px-4 py-2.5 text-[14px] font-bold text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition disabled:opacity-50">Back</button><button type="submit" disabled={isEnrollingMfa || mfaVerifyCode.length !== 6} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[150px]">{isEnrollingMfa ? 'Verifying...' : 'Verify & Enable'}</button></div></form>}
-              </div>
-            </div>, document.body
-          )}
-
-          {showDisableMfaModal && createPortal(
-            <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="disable-mfa-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isDisablingMfa) setShowDisableMfaModal(false); }}>
-              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[460px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
-                <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5"><div><h3 id="disable-mfa-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Disable Two-Factor Authentication?</h3><p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">This removes the verified authenticator factor from your account.</p></div><button type="button" onClick={() => setShowDisableMfaModal(false)} disabled={isDisablingMfa} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close disable MFA dialog">✕</button></div>
-                <div className="p-4 mb-5 bg-amber-50 dark:bg-[#332610] border border-amber-200 dark:border-amber-900/50 rounded-xl"><p className="text-[13.5px] leading-relaxed text-amber-800 dark:text-[#e8b64d]">Disabling MFA reduces account protection. Continue only if you intentionally want to remove the authenticator from this account.</p></div>
-                <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowDisableMfaModal(false)} disabled={isDisablingMfa} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button><button type="button" onClick={disableMfa} disabled={isDisablingMfa} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[150px]">{isDisablingMfa ? 'Disabling...' : 'Disable MFA'}</button></div>
-              </div>
-            </div>, document.body
-          )}
-
-          {/* TASK 5: REVIEW REQUEST MODAL BEFORE DB SUBMISSION */}
-          {showReviewModal && createPortal(
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
-              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]">
-                <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
-                  <div>
-                    <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Review Request</h3>
-                    <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Please double-check your details.</p>
-                  </div>
-                  <button onClick={() => setShowReviewModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
-                </div>
-                
-                <div className="space-y-3 mb-6 bg-brand-bg dark:bg-[#150a0c] p-5 rounded-2xl border border-brand-line dark:border-[#3b2328]">
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Patient:</span>
-                    <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{newRequest.patient_name}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Blood Type:</span>
-                    <span className="col-span-2 text-brand-accent dark:text-[#ff7d8b] font-bold">{newRequest.blood_type.replace('-', '−')}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Hospital:</span>
-                    <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{newRequest.hospital_name}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Location:</span>
-                    <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{newRequest.city}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Contact:</span>
-                    <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{newRequest.contact_number}</span>
-                  </div>
-                  {selectedDonor && (
-                    <div className="grid grid-cols-3 gap-2 text-[14px] pt-3 mt-3 border-t border-brand-line dark:border-[#3b2328]">
-                      <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Direct To:</span>
-                      <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{selectedDonor.full_name}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-2 flex justify-end gap-3">
-                  <button onClick={() => { setShowReviewModal(false); setShowRequestModal(true); }} disabled={isSubmittingRequest} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Edit Details</button>
-                  <button onClick={handleConfirmCreateRequest} disabled={isSubmittingRequest} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-[0_8px_20px_-10px_#a4121f] transition disabled:opacity-70 flex items-center justify-center min-w-[150px]">
-                    {isSubmittingRequest ? 'Submitting...' : 'Confirm & Submit'}
-                  </button>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )}
-
-          {activeChatRequest && session?.user && (
-            <CoordinationChat
-              request={activeChatRequest}
-              currentUser={session.user}
-              onClose={() => setActiveChatRequest(null)}
-            />
-          )}
-
-          {reportingTarget && session?.user && (
-            <ReportModal
-              request={reportingTarget.request}
-              targetUser={reportingTarget.targetUser}
-              currentUser={session.user}
-              onClose={() => setReportingTarget(null)}
-              onSubmitted={() => {
-                setReportingTarget(null);
-                showToast('Report submitted successfully. Our team will review it.', 'success');
-              }}
-              showToast={showToast}
-            />
-          )}
-
-          {/* REQUEST FORM MODAL */}
-          {showRequestModal && createPortal(
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
-              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[600px] w-full p-7 md:p-8 shadow-custom max-h-[90vh] overflow-y-auto custom-scrollbar animate-[rise_0.2s_ease_both]">
-                <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
-                  <div>
-                    <h3 className="font-display font-extrabold text-[24px] text-brand-ink dark:text-[#f8ece9]">Blood Request Form</h3>
-                    {selectedDonor && <p className="text-[13px] text-brand-accent dark:text-[#ff7d8b] font-bold mt-1">Direct Request for: {selectedDonor.full_name} ({selectedDonor.blood_type.replace('-', '−')})</p>}
-                  </div>
-                  <button onClick={() => setShowRequestModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
-                </div>
-                <form onSubmit={handleReviewRequest} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Request For <span className="text-brand-accent">*</span></label>
-                      <select value={newRequest.is_for_self} onChange={(e) => setNewRequest({ ...newRequest, is_for_self: e.target.value === 'true' })} className="w-full text-[15px] font-medium border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent appearance-none">
-                        <option value="true">Myself</option>
-                        <option value="false">Someone else</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Needed Blood Type <span className="text-brand-accent">*</span></label>
-                      <select disabled={!!selectedDonor} value={newRequest.blood_type} onChange={(e) => setNewRequest({ ...newRequest, blood_type: e.target.value })} className={`w-full text-[15px] font-medium border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent appearance-none ${selectedDonor ? 'opacity-60 cursor-not-allowed' : ''}`}>
-                        {BLOOD_TYPES.filter(t => t !== "Not provided / I don't know").map(t => <option key={t} value={t}>{t.replace('-', '−')}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Patient Name <span className="text-brand-accent">*</span></label>
-                    <input type="text" required value={newRequest.patient_name} onChange={(e) => setNewRequest({ ...newRequest, patient_name: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="Full Name" />
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Hospital / Medical Center <span className="text-brand-accent">*</span></label>
-                    <input type="text" required value={newRequest.hospital_name} onChange={(e) => setNewRequest({ ...newRequest, hospital_name: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="e.g. Caloocan City Medical Center" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Location / City <span className="text-brand-accent">*</span></label>
-                      <input type="text" required value={newRequest.city} onChange={(e) => setNewRequest({ ...newRequest, city: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="e.g. Quezon City" />
-                    </div>
-                    <div>
-                      <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Contact Number <span className="text-brand-accent">*</span></label>
-                      <input type="text" required value={newRequest.contact_number} onChange={(e) => setNewRequest({ ...newRequest, contact_number: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="09123456789" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Additional Note <span className="text-brand-muted font-normal ml-1">Optional</span></label>
-                    <textarea rows="3" value={newRequest.urgency_notes} onChange={(e) => setNewRequest({ ...newRequest, urgency_notes: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent custom-scrollbar" placeholder="e.g. Pre-surgery replacement units needed..." />
-                  </div>
-                  <div className="pt-5 flex justify-between items-center mt-2">
-                    <button type="button" onClick={() => setShowRequestModal(false)} className="px-4 py-2.5 text-[14.5px] font-bold text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition">Cancel</button>
-                    <button type="submit" className="px-6 py-3 text-[14.5px] font-bold text-brand-onBtn bg-brand-btn dark:bg-[#c9253a] hover:bg-brand-btnHover rounded-xl shadow-[0_8px_20px_-10px_#a4121f] transition flex items-center gap-2">Review Request →</button>
-                  </div>
-                </form>
-              </div>
-            </div>,
-            document.body
-          )}
-
-          {/* TASK 6: Acceptance Confirmation Modal */}
-          {requestToAccept && createPortal(
-            <div 
-              className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="accept-modal-title"
-              aria-describedby="accept-modal-desc"
-            >
-              <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]">
-                <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
-                  <div>
-                    <h3 id="accept-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Confirm Acceptance</h3>
-                    <p id="accept-modal-desc" className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Review your commitment before accepting.</p>
-                  </div>
-                  <button 
-                    onClick={() => setRequestToAccept(null)} 
-                    disabled={isAcceptingRequest}
-                    className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50"
-                    aria-label="Close confirmation dialog"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-3 mb-5 bg-brand-bg dark:bg-[#150a0c] p-5 rounded-2xl border border-brand-line dark:border-[#3b2328]">
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Requester:</span>
-                    <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{requestToAccept.profiles?.full_name || 'Unknown Requester'}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Blood Type:</span>
-                    <span className="col-span-2 text-brand-accent dark:text-[#ff7d8b] font-bold">{requestToAccept.blood_type ? requestToAccept.blood_type.replace('-', '−') : 'Not specified'}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Hospital:</span>
-                    <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{requestToAccept.hospital_name || 'Not specified'}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[14px]">
-                    <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Location:</span>
-                    <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{requestToAccept.city || 'Not specified'}</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-amber-50 dark:bg-[#332610] border border-amber-200 dark:border-amber-900/50 rounded-xl mb-5">
-                  <p className="text-amber-800 dark:text-[#e8b64d] text-[13.5px] leading-relaxed">
-                    <strong>Responsibility Acknowledgment:</strong><br/><br/>
-                    By accepting this request, you agree to coordinate with <strong>{requestToAccept.profiles?.full_name || 'the requester'}</strong>. This does <strong>not</strong> guarantee that you can donate blood.<br/><br/>
-                    Final medical screening, blood compatibility testing, and donation clearance must be handled by healthcare professionals at the facility.
-                  </p>
-                </div>
-
-                <div className="pt-2 flex justify-end gap-3">
-                  <button 
-                    onClick={() => setRequestToAccept(null)} 
-                    disabled={isAcceptingRequest}
-                    className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleConfirmAccept} 
-                    disabled={isAcceptingRequest}
-                    className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-ok dark:bg-[#58cf92] dark:text-[#173326] rounded-xl shadow-sm hover:opacity-90 transition disabled:opacity-70 min-w-[175px] flex items-center justify-center"
-                  >
-                    {isAcceptingRequest ? 'Accepting...' : 'I Agree, Accept Request'}
-                  </button>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )}
         </>
       )}
+
+      {/* --- ALL MODALS MOVED HERE TO BE GLOBALLY ACCESSIBLE --- */}
+      
+      {showReadinessModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="readiness-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isSavingReadiness) setShowReadinessModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[520px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div><h3 id="readiness-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Donor Readiness Assessment</h3><p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Please confirm these conditions before becoming visible as an available donor.</p></div>
+              <button type="button" onClick={() => setShowReadinessModal(false)} disabled={isSavingReadiness} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close donor readiness assessment">✕</button>
+            </div>
+            <form onSubmit={submitReadinessAssessment} className="space-y-4">
+              <div className="space-y-3">
+                {[
+                  ['wellRested', 'I am well-rested and feel physically fit to donate.'],
+                  ['noFever', 'I do not currently have a fever or significant illness.'],
+                  ['noRecentTattoo', 'I have not recently had a tattoo or other procedure that should temporarily prevent donation.'],
+                  ['understandsDisclaimer', 'I understand that this assessment does not replace professional medical screening.']
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-start gap-3 p-3.5 rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] cursor-pointer">
+                    <input type="checkbox" checked={!!readinessAnswers[key]} onChange={(e) => { setReadinessAnswers(prev => ({ ...prev, [key]: e.target.checked })); if (readinessError) setReadinessError(''); }} disabled={isSavingReadiness} className="mt-0.5 w-4 h-4 accent-brand-btn flex-none" />
+                    <span className="text-[13.5px] leading-relaxed text-brand-ink dark:text-[#f8ece9]">{label}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="p-4 bg-amber-50 dark:bg-[#332610] border border-amber-200 dark:border-amber-900/50 rounded-xl"><p className="text-[12.5px] leading-relaxed text-amber-800 dark:text-[#e8b64d]">Donor availability only makes your profile discoverable to potential requesters. Final eligibility, screening, and blood compatibility must be determined by qualified healthcare professionals.</p></div>
+              {readinessError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{readinessError}</p>}
+              <div className="pt-2 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowReadinessModal(false)} disabled={isSavingReadiness} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={isSavingReadiness} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[180px]">{isSavingReadiness ? 'Saving...' : 'Confirm & Become Available'}</button>
+              </div>
+            </form>
+          </div>
+        </div>, document.body
+      )}
+
+      {showEditProfileModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="edit-profile-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isSavingProfile) setShowEditProfileModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div><h3 id="edit-profile-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Edit Profile</h3><p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Update the profile details you control.</p></div>
+              <button type="button" onClick={() => setShowEditProfileModal(false)} disabled={isSavingProfile} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close edit profile dialog">✕</button>
+            </div>
+            <form onSubmit={handleSaveProfile} className="space-y-5">
+              <div><label htmlFor="edit-full-name" className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Full Name <span className="text-brand-accent">*</span></label><input id="edit-full-name" type="text" required minLength={2} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} disabled={isSavingProfile} autoFocus className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" placeholder="Your full name" /></div>
+              <div><p className="text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-2">Avatar Color</p><div className="flex flex-wrap gap-2.5">{AVATAR_OPTIONS.map((avatarClass) => <button key={avatarClass} type="button" aria-label={`Choose avatar color ${avatarClass.replace('bg-[', '').replace(']', '')}`} onClick={() => setEditAvatarColor(avatarClass)} disabled={isSavingProfile} className={`w-9 h-9 rounded-full ${avatarClass} transition ring-offset-2 dark:ring-offset-[#25141a] ${editAvatarColor === avatarClass ? 'ring-2 ring-brand-accent' : 'hover:scale-105'}`}>{editAvatarColor === avatarClass && <span className="text-white text-sm font-bold">✓</span>}</button>)}</div></div>
+              <div className="pt-2 flex justify-end gap-3"><button type="button" onClick={() => setShowEditProfileModal(false)} disabled={isSavingProfile} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button><button type="submit" disabled={isSavingProfile || !editFullName.trim()} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[130px]">{isSavingProfile ? 'Saving...' : 'Save Changes'}</button></div>
+            </form>
+          </div>
+        </div>, document.body
+      )}
+
+      {showMfaModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="mfa-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isEnrollingMfa) setShowMfaModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5"><div><h3 id="mfa-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Set Up Two-Factor Authentication</h3><p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">{mfaStep === 1 ? 'Use an authenticator app to protect your BloodBuddy account.' : 'Scan the QR code, then verify the generated code.'}</p></div><button type="button" onClick={() => setShowMfaModal(false)} disabled={isEnrollingMfa} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close MFA setup dialog">✕</button></div>
+            {mfaStep === 1 ? <div className="space-y-5"><div className="p-4 rounded-xl bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328]"><p className="text-[13.5px] text-brand-ink dark:text-[#f8ece9] leading-relaxed">You will be shown a QR code from Supabase. Add it to an authenticator app, then enter the one-time code to finish enabling MFA.</p></div>{mfaError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{mfaError}</p>}<div className="flex justify-end gap-3"><button type="button" onClick={() => setShowMfaModal(false)} disabled={isEnrollingMfa} className="px-4 py-2.5 text-[14px] font-bold text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition">Cancel</button><button type="button" onClick={startEnrollMfa} disabled={isEnrollingMfa} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[140px]">{isEnrollingMfa ? 'Preparing...' : 'Start Setup'}</button></div></div> : <form onSubmit={verifyMfaCode} className="space-y-5"><div className="flex justify-center p-4 rounded-2xl bg-white border border-brand-line dark:border-[#3b2328]">{mfaQrCode ? <QRCodeSVG value={mfaQrCode} size={190} includeMargin /> : <div className="w-[190px] h-[190px] flex items-center justify-center text-sm text-brand-muted">QR code unavailable.</div>}</div><div><p className="text-[12.5px] text-brand-muted dark:text-[#c2a8a9] mb-2">If you cannot scan the QR code, enter this secret manually:</p><div className="flex gap-2"><code className="flex-1 min-w-0 break-all px-3 py-2.5 rounded-xl bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] text-[12px] text-brand-ink dark:text-[#f8ece9]">{mfaSecret || 'Secret unavailable'}</code><button type="button" onClick={handleCopySecret} disabled={!mfaSecret} className="px-3 py-2.5 text-[12.5px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl disabled:opacity-50">Copy</button></div></div><div><label htmlFor="mfa-code" className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">6-digit authenticator code</label><input id="mfa-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" required value={mfaVerifyCode} onChange={(e) => { const value=e.target.value.replace(/\D/g,'').slice(0,6); setMfaVerifyCode(value); if (mfaError) setMfaError(''); }} disabled={isEnrollingMfa} className="w-full text-center tracking-[0.25em] font-mono text-[18px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3.5 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" placeholder="000000" /></div>{mfaError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{mfaError}</p>}<div className="pt-2 flex justify-end gap-3"><button type="button" onClick={() => { if (isEnrollingMfa) return; setMfaStep(1); setMfaError(''); setMfaVerifyCode(''); }} disabled={isEnrollingMfa} className="px-4 py-2.5 text-[14px] font-bold text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition disabled:opacity-50">Back</button><button type="submit" disabled={isEnrollingMfa || mfaVerifyCode.length !== 6} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[150px]">{isEnrollingMfa ? 'Verifying...' : 'Verify & Enable'}</button></div></form>}
+          </div>
+        </div>, document.body
+      )}
+
+      {showDisableMfaModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="disable-mfa-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isDisablingMfa) setShowDisableMfaModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[460px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5"><div><h3 id="disable-mfa-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Disable Two-Factor Authentication?</h3><p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">This removes the verified authenticator factor from your account.</p></div><button type="button" onClick={() => setShowDisableMfaModal(false)} disabled={isDisablingMfa} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close disable MFA dialog">✕</button></div>
+            <div className="p-4 mb-5 bg-amber-50 dark:bg-[#332610] border border-amber-200 dark:border-amber-900/50 rounded-xl"><p className="text-[13.5px] leading-relaxed text-amber-800 dark:text-[#e8b64d]">Disabling MFA reduces account protection. Continue only if you intentionally want to remove the authenticator from this account.</p></div>
+            <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowDisableMfaModal(false)} disabled={isDisablingMfa} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button><button type="button" onClick={disableMfa} disabled={isDisablingMfa} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[150px]">{isDisablingMfa ? 'Disabling...' : 'Disable MFA'}</button></div>
+          </div>
+        </div>, document.body
+      )}
+
+      {/* TASK 5: REVIEW REQUEST MODAL BEFORE DB SUBMISSION */}
+      {showReviewModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]">
+            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Review Request</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Please double-check your details.</p>
+              </div>
+              <button onClick={() => setShowReviewModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
+            </div>
+            
+            <div className="space-y-3 mb-6 bg-brand-bg dark:bg-[#150a0c] p-5 rounded-2xl border border-brand-line dark:border-[#3b2328]">
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Patient:</span>
+                <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{newRequest.patient_name}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Blood Type:</span>
+                <span className="col-span-2 text-brand-accent dark:text-[#ff7d8b] font-bold">{newRequest.blood_type.replace('-', '−')}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Hospital:</span>
+                <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{newRequest.hospital_name}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Location:</span>
+                <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{newRequest.city}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Contact:</span>
+                <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{newRequest.contact_number}</span>
+              </div>
+              {selectedDonor && (
+                <div className="grid grid-cols-3 gap-2 text-[14px] pt-3 mt-3 border-t border-brand-line dark:border-[#3b2328]">
+                  <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Direct To:</span>
+                  <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{selectedDonor.full_name}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end gap-3">
+              <button onClick={() => { setShowReviewModal(false); setShowRequestModal(true); }} disabled={isSubmittingRequest} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Edit Details</button>
+              <button onClick={handleConfirmCreateRequest} disabled={isSubmittingRequest} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-[0_8px_20px_-10px_#a4121f] transition disabled:opacity-70 flex items-center justify-center min-w-[150px]">
+                {isSubmittingRequest ? 'Submitting...' : 'Confirm & Submit'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {activeChatRequest && session?.user && (
+        <CoordinationChat
+          request={activeChatRequest}
+          currentUser={session.user}
+          onClose={() => setActiveChatRequest(null)}
+        />
+      )}
+
+      {reportingTarget && session?.user && (
+        <ReportModal
+          request={reportingTarget.request}
+          targetUser={reportingTarget.targetUser}
+          currentUser={session.user}
+          onClose={() => setReportingTarget(null)}
+          onSubmitted={() => {
+            setReportingTarget(null);
+            showToast('Report submitted successfully. Our team will review it.', 'success');
+          }}
+          showToast={showToast}
+        />
+      )}
+
+      {/* REQUEST FORM MODAL */}
+      {showRequestModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[600px] w-full p-7 md:p-8 shadow-custom max-h-[90vh] overflow-y-auto custom-scrollbar animate-[rise_0.2s_ease_both]">
+            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[24px] text-brand-ink dark:text-[#f8ece9]">Blood Request Form</h3>
+                {selectedDonor && <p className="text-[13px] text-brand-accent dark:text-[#ff7d8b] font-bold mt-1">Direct Request for: {selectedDonor.full_name} ({selectedDonor.blood_type.replace('-', '−')})</p>}
+              </div>
+              <button onClick={() => setShowRequestModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
+            </div>
+            <form onSubmit={handleReviewRequest} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Request For <span className="text-brand-accent">*</span></label>
+                  <select value={newRequest.is_for_self} onChange={(e) => setNewRequest({ ...newRequest, is_for_self: e.target.value === 'true' })} className="w-full text-[15px] font-medium border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent appearance-none">
+                    <option value="true">Myself</option>
+                    <option value="false">Someone else</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Needed Blood Type <span className="text-brand-accent">*</span></label>
+                  <select disabled={!!selectedDonor} value={newRequest.blood_type} onChange={(e) => setNewRequest({ ...newRequest, blood_type: e.target.value })} className={`w-full text-[15px] font-medium border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent appearance-none ${selectedDonor ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    {BLOOD_TYPES.filter(t => t !== "Not provided / I don't know").map(t => <option key={t} value={t}>{t.replace('-', '−')}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Patient Name <span className="text-brand-accent">*</span></label>
+                <input type="text" required value={newRequest.patient_name} onChange={(e) => setNewRequest({ ...newRequest, patient_name: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="Full Name" />
+              </div>
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Hospital / Medical Center <span className="text-brand-accent">*</span></label>
+                <input type="text" required value={newRequest.hospital_name} onChange={(e) => setNewRequest({ ...newRequest, hospital_name: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="e.g. Caloocan City Medical Center" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Location / City <span className="text-brand-accent">*</span></label>
+                  <input type="text" required value={newRequest.city} onChange={(e) => setNewRequest({ ...newRequest, city: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="e.g. Quezon City" />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Contact Number <span className="text-brand-accent">*</span></label>
+                  <input type="text" required value={newRequest.contact_number} onChange={(e) => setNewRequest({ ...newRequest, contact_number: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="09123456789" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Additional Note <span className="text-brand-muted font-normal ml-1">Optional</span></label>
+                <textarea rows="3" value={newRequest.urgency_notes} onChange={(e) => setNewRequest({ ...newRequest, urgency_notes: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent custom-scrollbar" placeholder="e.g. Pre-surgery replacement units needed..." />
+              </div>
+              <div className="pt-5 flex justify-between items-center mt-2">
+                <button type="button" onClick={() => setShowRequestModal(false)} className="px-4 py-2.5 text-[14.5px] font-bold text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition">Cancel</button>
+                <button type="submit" className="px-6 py-3 text-[14.5px] font-bold text-brand-onBtn bg-brand-btn dark:bg-[#c9253a] hover:bg-brand-btnHover rounded-xl shadow-[0_8px_20px_-10px_#a4121f] transition flex items-center gap-2">Review Request →</button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* TASK 6: Acceptance Confirmation Modal */}
+      {requestToAccept && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="accept-modal-title"
+          aria-describedby="accept-modal-desc"
+        >
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]">
+            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 id="accept-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Confirm Acceptance</h3>
+                <p id="accept-modal-desc" className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Review your commitment before accepting.</p>
+              </div>
+              <button 
+                onClick={() => setRequestToAccept(null)} 
+                disabled={isAcceptingRequest}
+                className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50"
+                aria-label="Close confirmation dialog"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-5 bg-brand-bg dark:bg-[#150a0c] p-5 rounded-2xl border border-brand-line dark:border-[#3b2328]">
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Requester:</span>
+                <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{requestToAccept.profiles?.full_name || 'Unknown Requester'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Blood Type:</span>
+                <span className="col-span-2 text-brand-accent dark:text-[#ff7d8b] font-bold">{requestToAccept.blood_type ? requestToAccept.blood_type.replace('-', '−') : 'Not specified'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Hospital:</span>
+                <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{requestToAccept.hospital_name || 'Not specified'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[14px]">
+                <span className="text-brand-muted dark:text-[#c2a8a9] font-medium">Location:</span>
+                <span className="col-span-2 text-brand-ink dark:text-[#f8ece9] font-bold">{requestToAccept.city || 'Not specified'}</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-50 dark:bg-[#332610] border border-amber-200 dark:border-amber-900/50 rounded-xl mb-5">
+              <p className="text-amber-800 dark:text-[#e8b64d] text-[13.5px] leading-relaxed">
+                <strong>Responsibility Acknowledgment:</strong><br/><br/>
+                By accepting this request, you agree to coordinate with <strong>{requestToAccept.profiles?.full_name || 'the requester'}</strong>. This does <strong>not</strong> guarantee that you can donate blood.<br/><br/>
+                Final medical screening, blood compatibility testing, and donation clearance must be handled by healthcare professionals at the facility.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-3">
+              <button 
+                onClick={() => setRequestToAccept(null)} 
+                disabled={isAcceptingRequest}
+                className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmAccept} 
+                disabled={isAcceptingRequest}
+                className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-ok dark:bg-[#58cf92] dark:text-[#173326] rounded-xl shadow-sm hover:opacity-90 transition disabled:opacity-70 min-w-[175px] flex items-center justify-center"
+              >
+                {isAcceptingRequest ? 'Accepting...' : 'I Agree, Accept Request'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
     </div>
   );
 }
