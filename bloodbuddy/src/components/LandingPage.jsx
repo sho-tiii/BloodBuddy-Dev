@@ -4,6 +4,15 @@ import bloodBuddyLogo from '../assets/bloodbuddy-logo-transparent.png';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+const PH_CITIES = [
+  "Caloocan City", "Las Piñas City", "Makati City", "Malabon City", "Mandaluyong City",
+  "Manila City", "Marikina City", "Muntinlupa City", "Navotas City", "Parañaque City",
+  "Pasay City", "Pasig City", "Quezon City", "San Juan City", "Taguig City", "Valenzuela City",
+  "Antipolo City", "Baguio City", "Batangas City", "Cebu City", "Davao City", "Iloilo City",
+  "Zamboanga City", "Bacoor City", "Imus City", "Santa Rosa City", "Angeles City",
+  "Bacolod City", "Cagayan de Oro City", "General Santos City", "Lucena City", "Naga City"
+];
+
 // Red blood cell compatibility: key = recipient, value = donors they can receive from
 const FROM = {
   'O-': ['O-'], 'O+': ['O+', 'O-'], 'A-': ['A-', 'O-'], 'A+': ['A+', 'A-', 'O+', 'O-'],
@@ -135,7 +144,6 @@ const CROSS_STEPS = [
   { t: 'Clumping means incompatible', d: 'Clumping means the blood is not compatible and must not be given. Smooth, even mixing means it is compatible.' }
 ];
 
-// Inayos ang logic para mas realistic: Clumped = Scattered/butil-butil, Smooth = Isang solid drop sa gitna
 const MiniWell = ({ clumped = false, tint = '#ffffff', className = '' }) => (
   <div
     className={`relative w-20 h-20 rounded-full overflow-hidden border-[4px] border-white dark:border-[#3b2328] shadow-[inset_0_4px_12px_-6px_rgba(20,8,10,0.3)] flex-none ${className}`}
@@ -269,7 +277,6 @@ const LabGuide = ({ tab, open, onToggle }) => {
                 </div>
               </div>
 
-              {/* Inayos na proper Numbered List */}
               <div className="mt-5 p-5 rounded-2xl bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328]">
                 <p className="text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] mb-3">How to use this test</p>
                 <ol className="list-decimal pl-5 space-y-1.5 text-[13.5px] leading-relaxed text-brand-muted dark:text-[#c2a8a9]">
@@ -306,11 +313,13 @@ export default function LandingPage({
 
   const [selectedType, setSelectedType] = useState('');
   const [location, setLocation] = useState('');
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [activeGuideType, setActiveGuideType] = useState('A+');
   const [demoSwitchOn, setDemoSwitchOn] = useState(false);
-  const [activeNav, setActiveNav] = useState('home'); // SCROLL TRACKER STATE
+  const [activeNav, setActiveNav] = useState('home'); 
   const dropdownRef = useRef(null);
 
   const [searchError, setSearchError] = useState(false);
@@ -345,13 +354,12 @@ export default function LandingPage({
   const labTimerRef = useRef(null);
 
   // Shared drag and drop (mouse drags, touch taps)
-  const [ghost, setGhost] = useState(null);     // { label, x, y }
+  const [ghost, setGhost] = useState(null);     
   const [overDrop, setOverDrop] = useState(null);
   const dragRef = useRef(null);
 
   useEffect(() => () => clearTimeout(labTimerRef.current), []);
 
-  // Theme Sync
   useEffect(() => {
     if (!propTheme) {
       if (localTheme === 'dark') {
@@ -369,7 +377,6 @@ export default function LandingPage({
     else setLocalTheme(localTheme === 'light' ? 'dark' : 'light');
   };
 
-  // Click Outside Dropdown
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -380,12 +387,11 @@ export default function LandingPage({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Scroll Tracker Logic (ScrollSpy)
   useEffect(() => {
     const handleScroll = () => {
       const howSection = document.getElementById('how');
       const donorsSection = document.getElementById('donors');
-      const scrollPosition = window.scrollY + 200; // Offset para sa sticky header
+      const scrollPosition = window.scrollY + 200;
 
       if (donorsSection && scrollPosition >= donorsSection.offsetTop) {
         setActiveNav('donors');
@@ -397,11 +403,10 @@ export default function LandingPage({
     };
 
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial check
+    handleScroll(); 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch Floating Database Tags
   useEffect(() => {
     const fetchRecentDonors = async () => {
       const { data } = await supabase
@@ -429,6 +434,13 @@ export default function LandingPage({
     };
     fetchRecentDonors();
   }, []);
+
+  const filteredCities = PH_CITIES.filter(c => {
+    const search = location.toLowerCase().trim();
+    if (!search) return true;
+    if (search === 'qc' && c === 'Quezon City') return true;
+    return c.toLowerCase().includes(search);
+  });
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
@@ -574,7 +586,7 @@ export default function LandingPage({
 
   const labOk = labDonor ? FROM[labPatient]?.includes(labDonor) : null;
   const labShowResult = labPhase === 'done' && !!labDonor;
-  // Iniayos ang visual mapping sa dynamic well para mag-match sa bagong MiniWell logic
+  
   const clumped = labShowResult && labOk === false;
   const pAbo = labPatient.replace(/[+-]/g, '');
   const patientAntibodies = [
@@ -594,7 +606,7 @@ export default function LandingPage({
     <div className="min-h-screen bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] font-body flex flex-col transition-colors duration-300">
       <style>{GLOBAL_CSS}</style>
 
-      {/* PERFECT HEADER */}
+      {/* HEADER */}
       <header className="sticky top-0 z-50 bg-brand-bg/90 dark:bg-[#150a0c]/90 backdrop-blur-md border-b border-brand-line dark:border-[#3b2328] transition-colors duration-300">
         <div className="max-w-[1160px] mx-auto px-4 md:px-6 h-[72px] flex items-center justify-between">
           <a href="#top" onClick={(e) => { if(session) { e.preventDefault(); onNavigateTo('home'); } }} className="flex items-center gap-2.5 font-display font-extrabold text-[22px] tracking-tight text-brand-ink dark:text-[#f8ece9] hover:opacity-80 transition">
@@ -668,7 +680,7 @@ export default function LandingPage({
                     </div>
                     <div className="p-2 border-t border-brand-line dark:border-[#3b2328]">
                       <button onClick={() => { setIsProfileOpen(false); onSignOut(); }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:bg-brand-blush dark:hover:bg-[#3a1a20] rounded-xl transition">
-                        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                         Log Out
                       </button>
                     </div>
@@ -879,7 +891,26 @@ export default function LandingPage({
                     </label>
                     <div className="relative">
                       <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-brand-accent dark:text-[#ff7d8b] pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      <input id="donor-location" type="text" placeholder="e.g. Caloocan City or Quezon City" value={location} onChange={(e) => setLocation(e.target.value)} className="w-full h-14 text-[15px] text-brand-ink dark:text-[#f8ece9] placeholder:text-brand-muted/70 dark:placeholder:text-[#c2a8a9]/60 bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-2xl pl-12 pr-4 focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:ring-4 focus:ring-brand-accent/10 dark:focus:ring-[#ff7d8b]/10 transition" />
+                      <input 
+                        id="donor-location" 
+                        type="text" 
+                        maxLength={50}
+                        placeholder="e.g. Caloocan City or Quezon City" 
+                        value={location} 
+                        onChange={(e) => { setLocation(e.target.value); setShowCityDropdown(true); }} 
+                        onFocus={() => setShowCityDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+                        className="w-full h-14 text-[15px] text-brand-ink dark:text-[#f8ece9] placeholder:text-brand-muted/70 dark:placeholder:text-[#c2a8a9]/60 bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-2xl pl-12 pr-4 focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:ring-4 focus:ring-brand-accent/10 dark:focus:ring-[#ff7d8b]/10 transition" 
+                      />
+                      {showCityDropdown && filteredCities.length > 0 && (
+                        <ul className="absolute z-10 w-full mt-1 bg-brand-surface dark:bg-[#25141a] border border-brand-line dark:border-[#3b2328] rounded-xl shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                          {filteredCities.map(city => (
+                            <li key={city} onMouseDown={() => { setLocation(city); setShowCityDropdown(false); }} className="px-4 py-2.5 text-[14px] text-brand-ink dark:text-[#f8ece9] hover:bg-brand-bg dark:hover:bg-[#150a0c] cursor-pointer transition">
+                              {city}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
 
