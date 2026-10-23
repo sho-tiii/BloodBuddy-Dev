@@ -5,12 +5,151 @@ import bloodBuddyLogo from '../assets/bloodbuddy-logo-transparent.png';
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 const PH_CITIES = [
-  "Caloocan City", "Las Piñas City", "Makati City", "Malabon City", "Mandaluyong City",
-  "Manila City", "Marikina City", "Muntinlupa City", "Navotas City", "Parañaque City",
-  "Pasay City", "Pasig City", "Quezon City", "San Juan City", "Taguig City", "Valenzuela City",
-  "Antipolo City", "Baguio City", "Batangas City", "Cebu City", "Davao City", "Iloilo City",
-  "Zamboanga City", "Bacoor City", "Imus City", "Santa Rosa City", "Angeles City",
-  "Bacolod City", "Cagayan de Oro City", "General Santos City", "Lucena City", "Naga City"
+  "Alaminos City",
+  "Angeles City",
+  "Antipolo City",
+  "Bacoor City",
+  "Bacolod City",
+  "Bago City",
+  "Baguio City",
+  "Bais City",
+  "Balanga City",
+  "Baliwag City",
+  "Batac City",
+  "Batangas City",
+  "Bayawan City",
+  "Baybay City",
+  "Bayugan City",
+  "Biñan City",
+  "Bislig City",
+  "Bogo City",
+  "Borongan City",
+  "Butuan City",
+  "Cabadbaran City",
+  "Cabanatuan City",
+  "Cabuyao City",
+  "Cadiz City",
+  "Cagayan de Oro City",
+  "Calaca City",
+  "Calamba City",
+  "Calapan City",
+  "Calbayog City",
+  "Caloocan City",
+  "Candon City",
+  "Canlaon City",
+  "Carmona City",
+  "Catbalogan City",
+  "Cauayan City",
+  "Cavite City",
+  "Cebu City",
+  "Cotabato City",
+  "Dagupan City",
+  "Danao City",
+  "Dapitan City",
+  "Dasmariñas City",
+  "Davao City",
+  "Digos City",
+  "Dipolog City",
+  "Dumaguete City",
+  "El Salvador City",
+  "Escalante City",
+  "Gapan City",
+  "General Santos City",
+  "General Trias City",
+  "Gingoog City",
+  "Guihulngan City",
+  "Himamaylan City",
+  "Ilagan City",
+  "Iligan City",
+  "Iloilo City",
+  "Imus City",
+  "Iriga City",
+  "Isabela City (Basilan)",
+  "Kabankalan City",
+  "Kidapawan City",
+  "Koronadal City",
+  "La Carlota City",
+  "Lamitan City",
+  "Laoag City",
+  "Lapu-Lapu City",
+  "Las Piñas City",
+  "Legazpi City",
+  "Ligao City",
+  "Lipa City",
+  "Lucena City",
+  "Mabalacat City",
+  "Makati City",
+  "Malabon City",
+  "Malaybalay City",
+  "Malolos City",
+  "Mandaluyong City",
+  "Mandaue City",
+  "Manila City",
+  "Marawi City",
+  "Marikina City",
+  "Masbate City",
+  "Mati City",
+  "Meycauayan City",
+  "Muntinlupa City",
+  "Naga City (Camarines Sur)",
+  "Naga City (Cebu)",
+  "Navotas City",
+  "Olongapo City",
+  "Ormoc City",
+  "Oroquieta City",
+  "Ozamiz City",
+  "Pagadian City",
+  "Palayan City",
+  "Panabo City",
+  "Parañaque City",
+  "Pasay City",
+  "Passi City",
+  "Puerto Princesa City",
+  "Quezon City",
+  "Roxas City",
+  "Sagay City",
+  "Samal City (Davao del Norte)",
+  "San Carlos City (Negros Occidental)",
+  "San Carlos City (Pangasinan)",
+  "San Fernando City (La Union)",
+  "San Fernando City (Pampanga)",
+  "San Jose City (Nueva Ecija)",
+  "San Jose del Monte City (Bulacan)",
+  "San Juan City",
+  "San Pablo City (Laguna)",
+  "San Pedro City (Laguna)",
+  "Santa Rosa City (Laguna)",
+  "Santiago City (Isabela)",
+  "Santo Tomas City (Batangas)",
+  "Science City of Muñoz (Nueva Ecija)",
+  "Silay City",
+  "Sipalay City",
+  "Sorsogon City",
+  "Surigao City",
+  "Tabaco City",
+  "Tabuk City",
+  "Tacloban City",
+  "Tacurong City",
+  "Tagaytay City",
+  "Tagbilaran City",
+  "Taguig City",
+  "Tagum City",
+  "Talisay City (Cebu)",
+  "Talisay City (Negros Occidental)",
+  "Tanauan City (Batangas)",
+  "Tangub City",
+  "Tanjay City",
+  "Tarlac City",
+  "Tayabas City",
+  "Toledo City",
+  "Trece Martires City",
+  "Tuguegarao City",
+  "Urdaneta City",
+  "Valencia City (Bukidnon)",
+  "Valenzuela City",
+  "Victorias City",
+  "Vigan City",
+  "Zamboanga City"
 ];
 
 // Red blood cell compatibility: key = recipient, value = donors they can receive from
@@ -680,7 +819,7 @@ export default function LandingPage({
                     </div>
                     <div className="p-2 border-t border-brand-line dark:border-[#3b2328]">
                       <button onClick={() => { setIsProfileOpen(false); onSignOut(); }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:bg-brand-blush dark:hover:bg-[#3a1a20] rounded-xl transition">
-                        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                         Log Out
                       </button>
                     </div>
@@ -895,6 +1034,7 @@ export default function LandingPage({
                         id="donor-location" 
                         type="text" 
                         maxLength={50}
+                        autoComplete="off"
                         placeholder="e.g. Caloocan City or Quezon City" 
                         value={location} 
                         onChange={(e) => { setLocation(e.target.value); setShowCityDropdown(true); }} 
@@ -903,9 +1043,13 @@ export default function LandingPage({
                         className="w-full h-14 text-[15px] text-brand-ink dark:text-[#f8ece9] placeholder:text-brand-muted/70 dark:placeholder:text-[#c2a8a9]/60 bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-2xl pl-12 pr-4 focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:ring-4 focus:ring-brand-accent/10 dark:focus:ring-[#ff7d8b]/10 transition" 
                       />
                       {showCityDropdown && filteredCities.length > 0 && (
-                        <ul className="absolute z-10 w-full mt-1 bg-brand-surface dark:bg-[#25141a] border border-brand-line dark:border-[#3b2328] rounded-xl shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                        <ul className="absolute z-30 w-full mt-2 bg-brand-surface dark:bg-[#25141a] border border-brand-line dark:border-[#3b2328] rounded-2xl shadow-[0_12px_24px_-12px_rgba(111,8,24,0.3)] dark:shadow-[0_12px_24px_-12px_rgba(255,125,139,0.15)] max-h-56 overflow-y-auto custom-scrollbar p-1.5">
                           {filteredCities.map(city => (
-                            <li key={city} onMouseDown={() => { setLocation(city); setShowCityDropdown(false); }} className="px-4 py-2.5 text-[14px] text-brand-ink dark:text-[#f8ece9] hover:bg-brand-bg dark:hover:bg-[#150a0c] cursor-pointer transition">
+                            <li 
+                              key={city} 
+                              onMouseDown={() => { setLocation(city); setShowCityDropdown(false); }} 
+                              className="px-3.5 py-2.5 text-[14.5px] font-medium text-brand-ink dark:text-[#f8ece9] hover:bg-brand-bg dark:hover:bg-[#150a0c] hover:text-brand-accent dark:hover:text-[#ff7d8b] cursor-pointer rounded-xl transition-colors"
+                            >
                               {city}
                             </li>
                           ))}
