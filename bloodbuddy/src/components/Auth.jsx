@@ -2,38 +2,37 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', "Not provided / I don't know"];
-const OTP_LENGTH = 8; 
-const MFA_LENGTH = 6; 
+const OTP_LENGTH = 8; // Para sa recovery
+const MFA_LENGTH = 6; // Para sa 2FA Authenticator
 
-export default function Auth({ onSessionChange, defaultIsLogin = true, selectedDonor = null, showToast }) {
+export default function Auth({ onSessionChange, defaultIsLogin = true, selectedDonor = null }) {
   const [view, setView] = useState(defaultIsLogin ? 'login' : 'register');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bloodType, setBloodType] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
-  
-  // Visibility states
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Advanced OTP States
+  // Advanced OTP States (For Password Recovery)
   const [otpValues, setOtpValues] = useState(Array(OTP_LENGTH).fill(''));
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [expiresIn, setExpiresIn] = useState(0);
   const [resendCooldown, setResendCooldown] = useState(0);
   const otpRefs = useRef([]);
 
-  // Advanced MFA States
+  // Advanced MFA States (For 2FA Login)
   const [mfaValues, setMfaValues] = useState(Array(MFA_LENGTH).fill(''));
   const [mfaFactorId, setMfaFactorId] = useState('');
   const mfaRefs = useRef([]);
 
+  // Timer logic for OTP Expiration (5 mins) and Resend Cooldown (60s)
   useEffect(() => {
     let timerInterval;
     if (view === 'verify_otp') {
@@ -45,6 +44,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
     return () => clearInterval(timerInterval);
   }, [view]);
 
+  // Format time (MM:SS)
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -53,13 +53,15 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
 
   const switchView = (v) => {
     setView(v);
-    setConfirmPassword(''); 
+    setError('');
+    setMessage('');
     
+    // Reset OTP states if entering verify view
     if (v === 'verify_otp') {
       setOtpValues(Array(OTP_LENGTH).fill(''));
       setOtpAttempts(0);
-      setExpiresIn(300); 
-      setResendCooldown(60); 
+      setExpiresIn(300); // 5 minutes
+      setResendCooldown(60); // 60 seconds before resend is allowed
     }
 
     if (v === 'verify_mfa') {
@@ -67,8 +69,9 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
     }
   };
 
+  // OTP Input Handlers (Recovery)
   const handleOtpChange = (index, value) => {
-    const cleanVal = value.replace(/[^a-zA-Z0-9]/g, '').slice(-1);
+    const cleanVal = value.replace(/[^a-zA-Z0-9]/g, '').slice(-1); // Alphanumeric only
     const newOtp = [...otpValues];
     newOtp[index] = cleanVal;
     setOtpValues(newOtp);
@@ -98,8 +101,9 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
     }
   };
 
+  // MFA Input Handlers (Login 2FA)
   const handleMfaChange = (index, value) => {
-    const cleanVal = value.replace(/[^0-9]/g, '').slice(-1); 
+    const cleanVal = value.replace(/[^0-9]/g, '').slice(-1); // Numbers only for TOTP
     const newMfa = [...mfaValues];
     newMfa[index] = cleanVal;
     setMfaValues(newMfa);
@@ -131,17 +135,19 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
 
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
+    setError('');
+    setMessage('');
     setLoading(true);
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
       if (resetError) throw resetError;
-      if(showToast) showToast('If registered, a new 8-digit OTP has been sent.', 'success');
+      setMessage('If registered, a new 8-digit OTP has been sent to your email.');
       setOtpValues(Array(OTP_LENGTH).fill(''));
       setOtpAttempts(0);
-      setExpiresIn(300); 
-      setResendCooldown(60); 
+      setExpiresIn(300); // Reset to 5 mins
+      setResendCooldown(60); // Reset 60s cooldown
     } catch (err) {
-      if(showToast) showToast(err.message || 'Failed to resend OTP.', 'error');
+      setError(err.message || 'Failed to resend OTP.');
     } finally {
       setLoading(false);
     }
@@ -150,12 +156,15 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+    setMessage('');
 
     try {
       if (view === 'login') {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
 
+        // PROPER MFA CHECK
         const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
         if (aalData && aalData.currentLevel === 'aal1' && aalData.nextLevel === 'aal2') {
@@ -166,27 +175,48 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
             setMfaFactorId(totpFactor.id);
             switchView('verify_mfa');
             setLoading(false);
-            return; 
+            return; // Pigilan ang login session, hingin ang code
           }
         }
 
+        // Kung walang 2FA o bypass
         if (onSessionChange) onSessionChange(data.session);
 
       } else if (view === 'register') {
         const nameRegex = /^[A-Za-zñÑ\s\-]+$/;
-        if (firstName.trim().length < 2 || !nameRegex.test(firstName.trim())) {
+        const fName = firstName.trim();
+        const lName = lastName.trim();
+
+        // 1. Basic Character & Length Check
+        if (fName.length < 2 || !nameRegex.test(fName)) {
           throw new Error('Please enter a valid First Name (letters only, minimum 2 characters).');
         }
-        if (lastName.trim().length < 2 || !nameRegex.test(lastName.trim())) {
+        if (lName.length < 2 || !nameRegex.test(lName)) {
           throw new Error('Please enter a valid Last Name (letters only, minimum 2 characters).');
         }
-        if (/(.)\1{2,}/.test(firstName.trim()) || /(.)\1{2,}/.test(lastName.trim())) {
+
+        // 2. Reject if the entire name is just one repeating letter (blocks "AA", "BB", "ccc")
+        if (/^(.)\1+$/i.test(fName.replace(/[\s\-]/g, ''))) {
+          throw new Error('First Name cannot consist of just a single repeating letter.');
+        }
+        if (/^(.)\1+$/i.test(lName.replace(/[\s\-]/g, ''))) {
+          throw new Error('Last Name cannot consist of just a single repeating letter.');
+        }
+
+        // 3. Reject 3 or more consecutive identical letters anywhere
+        if (/(.)\1{2,}/i.test(fName) || /(.)\1{2,}/i.test(lName)) {
           throw new Error('Please enter a valid name. Meaningless repeated characters are not allowed.');
         }
-        if (password !== confirmPassword) throw new Error('Passwords do not match. Please ensure both fields are identical.');
+
+        // 4. Reject common dummy texts and keyboard smashes
+        const blockedWords = ['asd', 'asdf', 'qwe', 'qwer', 'test', 'admin', 'user', 'none', 'null'];
+        if (blockedWords.includes(fName.toLowerCase()) || blockedWords.includes(lName.toLowerCase())) {
+          throw new Error('Please enter your real name. Dummy inputs are not allowed.');
+        }
+
         if (!termsAccepted) throw new Error('You must agree to the community platform terms.');
         
-        const fullName = `${firstName.trim()} ${lastName.trim()}`;
+        const fullName = `${fName} ${lName}`;
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -198,14 +228,13 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
           }
         });
         if (signUpError) throw signUpError;
-        
-        if(showToast) showToast('Registration successful! Please check your email for the verification link.', 'success');
+        setMessage('Registration successful! Please check your email to confirm your account.');
         switchView('login');
 
       } else if (view === 'forgot_password') {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
         if (resetError) throw resetError;
-        if(showToast) showToast('If your email is registered, an 8-digit OTP has been sent to it.', 'info');
+        setMessage('If your email is registered, an 8-digit OTP has been sent to it.');
         switchView('verify_otp');
 
       } else if (view === 'verify_otp') {
@@ -249,12 +278,10 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
         if (onSessionChange) onSessionChange(session);
 
       } else if (view === 'update_password') {
-        if (password !== confirmPassword) throw new Error('Passwords do not match. Please ensure both fields are identical.');
-
         const { error: updateError } = await supabase.auth.updateUser({ password });
         if (updateError) throw updateError;
         
-        if(showToast) showToast('Password updated successfully! You are now logged in.', 'success');
+        setMessage('Password updated successfully! You are now logged in.');
         setTimeout(() => {
           if (onSessionChange) {
              supabase.auth.getSession().then(({ data }) => onSessionChange(data.session));
@@ -262,12 +289,13 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
         }, 1500);
       }
     } catch (err) {
-      if(showToast) showToast(err.message || 'An error occurred.', 'error');
+      setError(err.message || 'An error occurred.');
     } finally {
       setLoading(false);
     }
   };
 
+  // SVG Icons
   const MailIcon = () => <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>;
   const LockIcon = () => <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
   const UserIcon = () => <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
@@ -278,7 +306,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
     login: { title: 'Sign in to BloodBuddy', sub: 'Access your blood requests, donation coordination, and settings.' },
     register: { title: 'Create a BloodBuddy Account', sub: 'One account connects you to request blood when needed or volunteer to donate when able.' },
     forgot_password: { title: 'Reset Your Password', sub: 'Enter your email address to receive an 8-digit verification code.' },
-    verify_otp: { title: 'Verify Email', sub: 'If registered, we sent an 8-digit code to your email. Enter it below.' },
+    verify_otp: { title: 'Verify Email', sub: 'We sent an 8-digit code to your email. Enter it below to proceed.' },
     verify_mfa: { title: 'Two-Factor Authentication', sub: 'Enter the 6-digit code from your authenticator app to log in.' },
     update_password: { title: 'Set New Password', sub: 'Create a new, strong password to secure your account.' }
   };
@@ -309,6 +337,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
   return (
     <div className="bg-brand-surface dark:bg-[#25141a] rounded-[24px] p-7 md:p-10 w-full shadow-custom border border-brand-line dark:border-[#3b2328] relative font-body transition-colors duration-300 max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
       
+      {/* Top Drop Icon */}
       <div className="w-[52px] h-[52px] bg-brand-blush dark:bg-[#3a1a20] rounded-full mx-auto flex items-center justify-center text-brand-accent dark:text-[#ff7d8b] mb-5">
         <svg viewBox="0 0 30 34" className="w-5 h-5"><path d="M15 1C15 1 2 15 2 22.5a13 13 0 0 0 26 0C28 15 15 1 15 1Z" fill="currentColor"/></svg>
       </div>
@@ -321,6 +350,9 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
       </p>
 
       {renderDonorBanners()}
+
+      {error && <div className="mb-5 p-3.5 bg-[#fdf3f4] dark:bg-brand-blush dark:border-brand-line border border-[#f4c8cb] text-[#d42b3a] dark:text-brand-crimsonHi rounded-xl text-[13.5px] font-semibold">{error}</div>}
+      {message && <div className="mb-5 p-3.5 bg-[#f0f9f4] dark:bg-brand-okSoft border border-[#cceadc] dark:border-brand-ok text-[#1d7a4b] dark:text-brand-ok rounded-xl text-[13.5px] font-semibold">{message}</div>}
 
       <form onSubmit={handleAuth} className="space-y-4">
         {view === 'register' && (
@@ -368,6 +400,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
               ))}
             </div>
             
+            {/* Timer & Resend Functionality */}
             <div className="mt-5 text-center flex flex-col items-center gap-1.5">
               {expiresIn > 0 && otpAttempts < 3 ? (
                 <p className="text-[13px] text-brand-muted dark:text-[#c2a8a9] font-medium">
@@ -391,6 +424,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
           </div>
         )}
 
+        {/* --- BAGONG 2FA VERIFY SCREEN PARA SA LOGIN --- */}
         {view === 'verify_mfa' && (
           <div className="mb-2">
             <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-2.5">6-Digit Authenticator Code</label>
@@ -421,42 +455,24 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
         )}
 
         {(view === 'login' || view === 'register' || view === 'update_password') && (
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between items-end mb-1.5">
-                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">
-                  {view === 'update_password' ? 'New Password' : 'Password'} {view==='register'&&<span className="text-brand-accent dark:text-[#ff7d8b]">*</span>}
-                </label>
-                {view === 'login' && (
-                  <button type="button" onClick={() => switchView('forgot_password')} className="text-[13px] font-semibold text-brand-accent dark:text-[#ff7d8b] hover:underline">
-                    Forgot password?
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><LockIcon /></div>
-                <input type={showPassword ? "text" : "password"} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={view === 'register' || view === 'update_password' ? "Create a strong password" : "Enter password"} className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-11 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9] hover:text-brand-ink dark:hover:text-[#f8ece9] transition">
-                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+          <div>
+            <div className="flex justify-between items-end mb-1.5">
+              <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">
+                {view === 'update_password' ? 'New Password' : 'Password'} {view==='register'&&<span className="text-brand-accent dark:text-[#ff7d8b]">*</span>}
+              </label>
+              {view === 'login' && (
+                <button type="button" onClick={() => switchView('forgot_password')} className="text-[13px] font-semibold text-brand-accent dark:text-[#ff7d8b] hover:underline">
+                  Forgot password?
                 </button>
-              </div>
+              )}
             </div>
-
-            {/* CONFIRM PASSWORD INPUT (Visible only for Register and Update Password) */}
-            {(view === 'register' || view === 'update_password') && (
-              <div>
-                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">
-                  Confirm Password <span className="text-brand-accent dark:text-[#ff7d8b]">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><LockIcon /></div>
-                  <input type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Confirm your password" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-11 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9] hover:text-brand-ink dark:hover:text-[#f8ece9] transition">
-                    {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
-                  </button>
-                </div>
-              </div>
-            )}
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><LockIcon /></div>
+              <input type={showPassword ? "text" : "password"} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={view === 'register' || view === 'update_password' ? "Create a strong password" : "Enter password"} className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-11 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9] hover:text-brand-ink dark:hover:text-[#f8ece9] transition">
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
         )}
 
@@ -506,6 +522,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
         </button>
       </form>
 
+      {/* Footer Navigation */}
       <div className="mt-8 pt-6 border-t border-brand-line dark:border-[#3b2328] text-center text-[14px] text-brand-muted dark:text-[#c2a8a9]">
         {view === 'login' && (
           <p>Don't have a BloodBuddy account yet? <br className="sm:hidden" /> <button type="button" onClick={() => switchView('register')} className="font-bold text-brand-accent dark:text-[#ff7d8b] hover:underline mt-1 sm:mt-0">Create Account / Register</button></p>
