@@ -11,7 +11,6 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
   const [accessError, setAccessError] = useState('');
   const messagesEndRef = useRef(null);
   
-  // NEW: State for file attachments
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -80,7 +79,7 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) { 
         setSendError('File size must be under 5MB.');
         return;
       }
@@ -92,16 +91,16 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
   const uploadFile = async (file) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `chat_attachments/${request.id}/${fileName}`;
+    const filePath = `${request.id}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('attachments') // Assumes a bucket named 'attachments' exists
+      .from('chat_attachments') 
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
     const { data: publicUrlData } = supabase.storage
-      .from('attachments')
+      .from('chat_attachments')
       .getPublicUrl(filePath);
 
     return publicUrlData.publicUrl;
@@ -118,7 +117,6 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
     try {
       let finalMessage = messageText;
 
-      // Handle file upload if present
       if (selectedFile) {
         const fileUrl = await uploadFile(selectedFile);
         finalMessage = `[Attachment: ${fileUrl}] ${finalMessage}`.trim();
@@ -145,7 +143,6 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
     }
   };
 
-  // Helper to detect attachment URLs in messages
   const renderMessageContent = (text) => {
     const attachmentRegex = /\[Attachment: (.*?)\]/g;
     const match = attachmentRegex.exec(text);
@@ -154,7 +151,7 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
       const url = match[1];
       const cleanText = text.replace(match[0], '').trim();
       
-      const isImage = /\.(jpeg|jpg|gif|png|webp)$/i.test(url) || url.includes('chat_attachments'); // basic check
+      const isImage = /\.(jpeg|jpg|gif|png|webp)$/i.test(url) || url.includes('chat_attachments'); 
       
       return (
         <div className="flex flex-col gap-2">
@@ -178,7 +175,6 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
     <div className="fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60 font-body">
       <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[600px] w-full h-[85vh] min-h-[500px] max-h-[700px] shadow-custom flex flex-col overflow-hidden border border-brand-line dark:border-[#3b2328] animate-[rise_0.2s_ease_both]">
         
-        {/* HEADER SECTION */}
         <div className="p-5 md:p-6 border-b border-brand-line dark:border-[#3b2328] flex items-center justify-between gap-4 flex-none bg-brand-surface dark:bg-[#25141a]">
           <div className="min-w-0 flex-1">
             <div className="flex items-center flex-wrap gap-2.5 mb-1.5">
@@ -202,14 +198,12 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
           </button>
         </div>
 
-        {/* ERROR ALERTS */}
         {(accessError || sendError) && (
           <div role="alert" className="bg-brand-blush dark:bg-[#3a1a20] text-brand-crimsonHi dark:text-[#f2606f] text-[13px] font-bold px-6 py-3 border-b border-brand-line dark:border-[#3b2328] flex-none">
             {accessError || sendError}
           </div>
         )}
 
-        {/* CHAT MESSAGES AREA */}
         <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-4 bg-brand-bg dark:bg-[#150a0c] custom-scrollbar">
           {loading ? (
             <p className="text-[13.5px] font-medium text-center text-brand-muted dark:text-[#c2a8a9] py-10">Loading messages...</p>
@@ -252,7 +246,6 @@ export default function CoordinationChat({ request, currentUser, onClose }) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* INPUT FORM SECTION */}
         <div className="p-4 md:p-5 bg-brand-surface dark:bg-[#25141a] border-t border-brand-line dark:border-[#3b2328] flex-none">
           {selectedFile && (
             <div className="flex items-center justify-between bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-lg p-2 mb-3">
