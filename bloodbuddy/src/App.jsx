@@ -15,6 +15,14 @@ const AVATAR_OPTIONS = [
   'bg-[#c9253a]', 'bg-[#1d7a4b]', 'bg-[#2563eb]', 'bg-[#d97706]', 'bg-[#7c3aed]', 'bg-[#db2777]', 'bg-[#1e1013]'
 ];
 
+const PH_CITIES = [
+  "Caloocan City", "Las Piñas City", "Makati City", "Malabon City", "Mandaluyong City",
+  "Manila City", "Marikina City", "Muntinlupa City", "Navotas City", "Parañaque City",
+  "Pasay City", "Pasig City", "Quezon City", "San Juan City", "Taguig City", "Valenzuela City",
+  "Antipolo City", "Baguio City", "Batangas City", "Cebu City", "Davao City", "Iloilo City",
+  "Zamboanga City", "Bacoor City", "Imus City", "Santa Rosa City", "Angeles City"
+];
+
 // --- TOAST NOTIFICATION COMPONENT ---
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -59,6 +67,7 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [initialIsLogin, setInitialIsLogin] = useState(true);
   const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
   const [currentRoute, setCurrentRoute] = useState('home'); 
   const [activeTab, setActiveTab] = useState('my_requests'); 
@@ -117,7 +126,9 @@ export default function App() {
   const [reportingTarget, setReportingTarget] = useState(null);
   const [requestToAccept, setRequestToAccept] = useState(null);
   const [isAcceptingRequest, setIsAcceptingRequest] = useState(false);
+  
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   
@@ -128,7 +139,14 @@ export default function App() {
   const closeToast = useCallback(() => setToastData({ message: '', type: 'info' }), []);
 
   const [newRequest, setNewRequest] = useState({
-    patient_name: '', is_for_self: true, blood_type: 'O+', hospital_name: '', city: 'Metro Manila', contact_number: '', urgency_notes: ''
+    patient_name: '', is_for_self: true, blood_type: 'O+', hospital_name: '', city: '', contact_number: '', urgency_notes: ''
+  });
+
+  const filteredCities = PH_CITIES.filter(c => {
+    const search = newRequest.city.toLowerCase().trim();
+    if (!search) return true;
+    if (search === 'qc' && c === 'Quezon City') return true;
+    return c.toLowerCase().includes(search);
   });
 
   useEffect(() => {
@@ -566,6 +584,10 @@ export default function App() {
       showToast('Please complete all required fields.', 'error');
       return;
     }
+    if (newRequest.contact_number.length !== 11 || !newRequest.contact_number.startsWith('09')) {
+      showToast('Please enter a valid 11-digit mobile number starting with 09.', 'error');
+      return;
+    }
     setShowRequestModal(false);
     setShowReviewModal(true);
   };
@@ -615,7 +637,7 @@ export default function App() {
       is_for_self: true,
       blood_type: 'O+',
       hospital_name: '',
-      city: 'Metro Manila',
+      city: '',
       contact_number: '',
       urgency_notes: '',
     });
@@ -627,13 +649,12 @@ export default function App() {
     showToast('Emergency request posted successfully.', 'success');
   };
 
-  // Direct Password Update specifically for logged in users with 5-minute cooldown
   const handleSendResetPassword = () => {
     if (session?.user?.id) {
       const lastChange = localStorage.getItem(`pw_changed_${session.user.id}`);
       if (lastChange) {
         const timePassed = Date.now() - parseInt(lastChange, 10);
-        const cooldown = 5 * 60 * 1000; // 5 minutes in milliseconds
+        const cooldown = 5 * 60 * 1000; 
         if (timePassed < cooldown) {
           const remaining = Math.ceil((cooldown - timePassed) / 60000);
           showToast(`For your security, please wait ${remaining} minute(s) before changing your password again.`, 'warning');
@@ -642,7 +663,6 @@ export default function App() {
       }
     }
 
-    // Skip the email & MFA step entirely since the user is already authenticated
     setResetStep('update_direct');
     setNewPassword('');
     setConfirmNewPassword('');
@@ -651,7 +671,6 @@ export default function App() {
     setShowPasswordModal(true);
   };
 
-  // This handles the OTP verification only when the user is doing Account Recovery from the Login Screen
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setIsSendingReset(true);
@@ -725,7 +744,6 @@ export default function App() {
          showToast(error.message, 'error');
       }
     } else {
-      // Success
       if (session?.user?.id) {
         localStorage.setItem(`pw_changed_${session.user.id}`, Date.now().toString());
       }
@@ -923,7 +941,7 @@ export default function App() {
             onToggleTheme={toggleTheme}
             onOpenAuth={(isLogin = true) => { setInitialIsLogin(isLogin); setShowAuthModal(true); }}
             onNavigateTo={navigateTo}
-            onSignOut={() => supabase.auth.signOut()}
+            onSignOut={() => setShowLogoutModal(true)}
             onRequestDonor={initiateRequestWithDonor}
           />
 
@@ -1000,7 +1018,7 @@ export default function App() {
                     </p>
                     
                     <div className="relative">
-                      <input type={showNewPassword ? "text" : "password"} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New strong password" className="w-full text-[14px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 pr-11 focus:outline-none focus:border-brand-accent transition" />
+                      <input type={showNewPassword ? "text" : "password"} required maxLength={128} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New strong password" className="w-full text-[14px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 pr-11 focus:outline-none focus:border-brand-accent transition" />
                       <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent" aria-label={showNewPassword ? "Hide new password" : "Show new password"}>
                         {showNewPassword ? (
                           <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1011,7 +1029,7 @@ export default function App() {
                     </div>
 
                     <div className="relative">
-                      <input type={showConfirmNewPassword ? "text" : "password"} required value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Confirm new password" className="w-full text-[14px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 pr-11 focus:outline-none focus:border-brand-accent transition" />
+                      <input type={showConfirmNewPassword ? "text" : "password"} required maxLength={128} value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Confirm new password" className="w-full text-[14px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 pr-11 focus:outline-none focus:border-brand-accent transition" />
                       <button type="button" onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent" aria-label={showConfirmNewPassword ? "Hide confirm password" : "Show confirm password"}>
                         {showConfirmNewPassword ? (
                           <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1093,7 +1111,7 @@ export default function App() {
                         </button>
                       </div>
                       <div className="p-2 border-t border-brand-line dark:border-[#3b2328]">
-                        <button onClick={() => { setIsProfileOpen(false); supabase.auth.signOut(); }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:bg-brand-blush dark:hover:bg-[#3a1a20] rounded-xl transition">
+                        <button onClick={() => { setIsProfileOpen(false); setShowLogoutModal(true); }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:bg-brand-blush dark:hover:bg-[#3a1a20] rounded-xl transition">
                           <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                           Log Out
                         </button>
@@ -1373,7 +1391,7 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB 3: ACCOUNT SETTINGS (Tighter Layout) */}
+            {/* TAB 3: ACCOUNT SETTINGS */}
             {activeTab === 'settings' && (
               <div className="animate-[rise_0.35s_ease_both]">
                 <div className="mb-6">
@@ -1541,7 +1559,7 @@ export default function App() {
               <button type="button" onClick={() => setShowEditProfileModal(false)} disabled={isSavingProfile} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close edit profile dialog">✕</button>
             </div>
             <form onSubmit={handleSaveProfile} className="space-y-5">
-              <div><label htmlFor="edit-full-name" className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Full Name <span className="text-brand-accent">*</span></label><input id="edit-full-name" type="text" required minLength={2} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} disabled={isSavingProfile} autoFocus className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" placeholder="Your full name" /></div>
+              <div><label htmlFor="edit-full-name" className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Full Name <span className="text-brand-accent">*</span></label><input id="edit-full-name" type="text" required minLength={2} maxLength={50} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} disabled={isSavingProfile} autoFocus className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" placeholder="Your full name" /></div>
               <div><p className="text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-2">Avatar Color</p><div className="flex flex-wrap gap-2.5">{AVATAR_OPTIONS.map((avatarClass) => <button key={avatarClass} type="button" aria-label={`Choose avatar color ${avatarClass.replace('bg-[', '').replace(']', '')}`} onClick={() => setEditAvatarColor(avatarClass)} disabled={isSavingProfile} className={`w-9 h-9 rounded-full ${avatarClass} transition ring-offset-2 dark:ring-offset-[#25141a] ${editAvatarColor === avatarClass ? 'ring-2 ring-brand-accent' : 'hover:scale-105'}`}>{editAvatarColor === avatarClass && <span className="text-white text-sm font-bold">✓</span>}</button>)}</div></div>
               <div className="pt-2 flex justify-end gap-3"><button type="button" onClick={() => setShowEditProfileModal(false)} disabled={isSavingProfile} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button><button type="submit" disabled={isSavingProfile || !editFullName.trim()} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[130px]">{isSavingProfile ? 'Saving...' : 'Save Changes'}</button></div>
             </form>
@@ -1568,7 +1586,85 @@ export default function App() {
         </div>, document.body
       )}
 
-      {/* TASK 5: REVIEW REQUEST MODAL BEFORE DB SUBMISSION */}
+      {/* REQUEST FORM MODAL WITH AUTO-SUGGEST AND CONTACT VALIDATION */}
+      {showRequestModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[600px] w-full p-7 md:p-8 shadow-custom max-h-[90vh] overflow-y-auto custom-scrollbar animate-[rise_0.2s_ease_both]">
+            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[24px] text-brand-ink dark:text-[#f8ece9]">Blood Request Form</h3>
+                {selectedDonor && <p className="text-[13px] text-brand-accent dark:text-[#ff7d8b] font-bold mt-1">Direct Request for: {selectedDonor.full_name} ({selectedDonor.blood_type.replace('-', '−')})</p>}
+              </div>
+              <button onClick={() => setShowRequestModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
+            </div>
+            <form onSubmit={handleReviewRequest} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Request For <span className="text-brand-accent">*</span></label>
+                  <select value={newRequest.is_for_self} onChange={(e) => setNewRequest({ ...newRequest, is_for_self: e.target.value === 'true' })} className="w-full text-[15px] font-medium border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent appearance-none">
+                    <option value="true">Myself</option>
+                    <option value="false">Someone else</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Needed Blood Type <span className="text-brand-accent">*</span></label>
+                  <select disabled={!!selectedDonor} value={newRequest.blood_type} onChange={(e) => setNewRequest({ ...newRequest, blood_type: e.target.value })} className={`w-full text-[15px] font-medium border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent appearance-none ${selectedDonor ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    {BLOOD_TYPES.filter(t => t !== "Not provided / I don't know").map(t => <option key={t} value={t}>{t.replace('-', '−')}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Patient Name <span className="text-brand-accent">*</span></label>
+                <input type="text" required maxLength={50} value={newRequest.patient_name} onChange={(e) => setNewRequest({ ...newRequest, patient_name: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="Full Name" />
+              </div>
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Hospital / Medical Center <span className="text-brand-accent">*</span></label>
+                <input type="text" required maxLength={100} value={newRequest.hospital_name} onChange={(e) => setNewRequest({ ...newRequest, hospital_name: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="e.g. Caloocan City Medical Center" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Location / City <span className="text-brand-accent">*</span></label>
+                  <input 
+                    type="text" 
+                    required 
+                    maxLength={50}
+                    value={newRequest.city} 
+                    onChange={(e) => { setNewRequest({ ...newRequest, city: e.target.value }); setShowCityDropdown(true); }} 
+                    onFocus={() => setShowCityDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+                    className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" 
+                    placeholder="e.g. Quezon City" 
+                  />
+                  {showCityDropdown && filteredCities.length > 0 && (
+                    <ul className="absolute z-10 w-full mt-1 bg-brand-surface dark:bg-[#25141a] border border-brand-line dark:border-[#3b2328] rounded-xl shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                      {filteredCities.map(city => (
+                        <li key={city} onMouseDown={() => { setNewRequest({ ...newRequest, city }); setShowCityDropdown(false); }} className="px-4 py-2.5 text-[14px] text-brand-ink dark:text-[#f8ece9] hover:bg-brand-bg dark:hover:bg-[#150a0c] cursor-pointer transition">
+                          {city}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Contact Number <span className="text-brand-accent">*</span></label>
+                  <input type="tel" required minLength={11} maxLength={11} value={newRequest.contact_number} onChange={(e) => { const val = e.target.value.replace(/\D/g, '').slice(0, 11); setNewRequest({ ...newRequest, contact_number: val }); }} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="09123456789" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Additional Note <span className="text-brand-muted font-normal ml-1">Optional</span></label>
+                <textarea rows="3" maxLength={200} value={newRequest.urgency_notes} onChange={(e) => setNewRequest({ ...newRequest, urgency_notes: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent custom-scrollbar" placeholder="e.g. Pre-surgery replacement units needed..." />
+              </div>
+              <div className="pt-5 flex justify-between items-center mt-2">
+                <button type="button" onClick={() => setShowRequestModal(false)} className="px-4 py-2.5 text-[14.5px] font-bold text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition">Cancel</button>
+                <button type="submit" className="px-6 py-3 text-[14.5px] font-bold text-brand-onBtn bg-brand-btn dark:bg-[#c9253a] hover:bg-brand-btnHover rounded-xl shadow-[0_8px_20px_-10px_#a4121f] transition flex items-center gap-2">Review Request →</button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* REVIEW REQUEST MODAL BEFORE DB SUBMISSION */}
       {showReviewModal && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
           <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]">
@@ -1642,88 +1738,16 @@ export default function App() {
         />
       )}
 
-      {/* REQUEST FORM MODAL */}
-      {showRequestModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
-          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[600px] w-full p-7 md:p-8 shadow-custom max-h-[90vh] overflow-y-auto custom-scrollbar animate-[rise_0.2s_ease_both]">
-            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
-              <div>
-                <h3 className="font-display font-extrabold text-[24px] text-brand-ink dark:text-[#f8ece9]">Blood Request Form</h3>
-                {selectedDonor && <p className="text-[13px] text-brand-accent dark:text-[#ff7d8b] font-bold mt-1">Direct Request for: {selectedDonor.full_name} ({selectedDonor.blood_type.replace('-', '−')})</p>}
-              </div>
-              <button onClick={() => setShowRequestModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
-            </div>
-            <form onSubmit={handleReviewRequest} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Request For <span className="text-brand-accent">*</span></label>
-                  <select value={newRequest.is_for_self} onChange={(e) => setNewRequest({ ...newRequest, is_for_self: e.target.value === 'true' })} className="w-full text-[15px] font-medium border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent appearance-none">
-                    <option value="true">Myself</option>
-                    <option value="false">Someone else</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Needed Blood Type <span className="text-brand-accent">*</span></label>
-                  <select disabled={!!selectedDonor} value={newRequest.blood_type} onChange={(e) => setNewRequest({ ...newRequest, blood_type: e.target.value })} className={`w-full text-[15px] font-medium border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent appearance-none ${selectedDonor ? 'opacity-60 cursor-not-allowed' : ''}`}>
-                    {BLOOD_TYPES.filter(t => t !== "Not provided / I don't know").map(t => <option key={t} value={t}>{t.replace('-', '−')}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Patient Name <span className="text-brand-accent">*</span></label>
-                <input type="text" required value={newRequest.patient_name} onChange={(e) => setNewRequest({ ...newRequest, patient_name: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="Full Name" />
-              </div>
-              <div>
-                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Hospital / Medical Center <span className="text-brand-accent">*</span></label>
-                <input type="text" required value={newRequest.hospital_name} onChange={(e) => setNewRequest({ ...newRequest, hospital_name: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="e.g. Caloocan City Medical Center" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Location / City <span className="text-brand-accent">*</span></label>
-                  <input type="text" required value={newRequest.city} onChange={(e) => setNewRequest({ ...newRequest, city: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="e.g. Quezon City" />
-                </div>
-                <div>
-                  <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Contact Number <span className="text-brand-accent">*</span></label>
-                  <input type="text" required value={newRequest.contact_number} onChange={(e) => setNewRequest({ ...newRequest, contact_number: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent" placeholder="09123456789" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Additional Note <span className="text-brand-muted font-normal ml-1">Optional</span></label>
-                <textarea rows="3" value={newRequest.urgency_notes} onChange={(e) => setNewRequest({ ...newRequest, urgency_notes: e.target.value })} className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent custom-scrollbar" placeholder="e.g. Pre-surgery replacement units needed..." />
-              </div>
-              <div className="pt-5 flex justify-between items-center mt-2">
-                <button type="button" onClick={() => setShowRequestModal(false)} className="px-4 py-2.5 text-[14.5px] font-bold text-brand-muted hover:text-brand-ink dark:hover:text-[#f8ece9] transition">Cancel</button>
-                <button type="submit" className="px-6 py-3 text-[14.5px] font-bold text-brand-onBtn bg-brand-btn dark:bg-[#c9253a] hover:bg-brand-btnHover rounded-xl shadow-[0_8px_20px_-10px_#a4121f] transition flex items-center gap-2">Review Request →</button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* TASK 6: Acceptance Confirmation Modal */}
+      {/* Acceptance Confirmation Modal */}
       {requestToAccept && createPortal(
-        <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="accept-modal-title"
-          aria-describedby="accept-modal-desc"
-        >
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60">
           <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]">
             <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
               <div>
-                <h3 id="accept-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Confirm Acceptance</h3>
-                <p id="accept-modal-desc" className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Review your commitment before accepting.</p>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Confirm Acceptance</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Review your commitment before accepting.</p>
               </div>
-              <button 
-                onClick={() => setRequestToAccept(null)} 
-                disabled={isAcceptingRequest}
-                className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50"
-                aria-label="Close confirmation dialog"
-              >
-                ✕
-              </button>
+              <button onClick={() => setRequestToAccept(null)} disabled={isAcceptingRequest} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50">✕</button>
             </div>
 
             <div className="space-y-3 mb-5 bg-brand-bg dark:bg-[#150a0c] p-5 rounded-2xl border border-brand-line dark:border-[#3b2328]">
@@ -1754,24 +1778,33 @@ export default function App() {
             </div>
 
             <div className="pt-2 flex justify-end gap-3">
-              <button 
-                onClick={() => setRequestToAccept(null)} 
-                disabled={isAcceptingRequest}
-                className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleConfirmAccept} 
-                disabled={isAcceptingRequest}
-                className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-ok dark:bg-[#58cf92] dark:text-[#173326] rounded-xl shadow-sm hover:opacity-90 transition disabled:opacity-70 min-w-[175px] flex items-center justify-center"
-              >
+              <button onClick={() => setRequestToAccept(null)} disabled={isAcceptingRequest} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button>
+              <button onClick={handleConfirmAccept} disabled={isAcceptingRequest} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-ok dark:bg-[#58cf92] dark:text-[#173326] rounded-xl shadow-sm hover:opacity-90 transition disabled:opacity-70 min-w-[175px] flex items-center justify-center">
                 {isAcceptingRequest ? 'Accepting...' : 'I Agree, Accept Request'}
               </button>
             </div>
           </div>
         </div>,
         document.body
+      )}
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowLogoutModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[420px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Confirm Log Out</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Are you sure you want to sign out?</p>
+              </div>
+              <button type="button" onClick={() => setShowLogoutModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={() => setShowLogoutModal(false)} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition">Cancel</button>
+              <button type="button" onClick={() => { setShowLogoutModal(false); supabase.auth.signOut(); }} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition hover:bg-brand-btnHover min-w-[120px]">Log Out</button>
+            </div>
+          </div>
+        </div>, document.body
       )}
 
     </div>
