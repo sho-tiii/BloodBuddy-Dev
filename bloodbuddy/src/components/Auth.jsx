@@ -191,6 +191,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
           email,
           password,
           options: {
+            emailRedirectTo: window.location.origin, // Tinitiyak na babalik sa mismong user app
             data: {
               full_name: fullName,
               blood_type: bloodType || "Not provided / I don't know"
@@ -203,7 +204,9 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
         switchView('login');
 
       } else if (view === 'forgot_password') {
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin // Tinitiyak na babalik sa mismong user app
+        });
         if (resetError) throw resetError;
         if(showToast) showToast('If your email is registered, an 8-digit OTP has been sent to it.', 'info');
         switchView('verify_otp');
