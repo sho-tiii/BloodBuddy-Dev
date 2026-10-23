@@ -53,7 +53,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
 
   const switchView = (v) => {
     setView(v);
-    setConfirmPassword(''); // Reset field upon view switch
+    setConfirmPassword(''); 
     
     if (v === 'verify_otp') {
       setOtpValues(Array(OTP_LENGTH).fill(''));
@@ -135,7 +135,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
       if (resetError) throw resetError;
-      if(showToast) showToast('A new 8-digit OTP has been sent to your email.', 'success');
+      if(showToast) showToast('If registered, a new 8-digit OTP has been sent.', 'success');
       setOtpValues(Array(OTP_LENGTH).fill(''));
       setOtpAttempts(0);
       setExpiresIn(300); 
@@ -173,6 +173,16 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
         if (onSessionChange) onSessionChange(data.session);
 
       } else if (view === 'register') {
+        const nameRegex = /^[A-Za-zñÑ\s\-]+$/;
+        if (firstName.trim().length < 2 || !nameRegex.test(firstName.trim())) {
+          throw new Error('Please enter a valid First Name (letters only, minimum 2 characters).');
+        }
+        if (lastName.trim().length < 2 || !nameRegex.test(lastName.trim())) {
+          throw new Error('Please enter a valid Last Name (letters only, minimum 2 characters).');
+        }
+        if (/(.)\1{2,}/.test(firstName.trim()) || /(.)\1{2,}/.test(lastName.trim())) {
+          throw new Error('Please enter a valid name. Meaningless repeated characters are not allowed.');
+        }
         if (password !== confirmPassword) throw new Error('Passwords do not match. Please ensure both fields are identical.');
         if (!termsAccepted) throw new Error('You must agree to the community platform terms.');
         
@@ -195,7 +205,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
       } else if (view === 'forgot_password') {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
         if (resetError) throw resetError;
-        if(showToast) showToast('An 8-digit OTP has been sent to your email.', 'info');
+        if(showToast) showToast('If your email is registered, an 8-digit OTP has been sent to it.', 'info');
         switchView('verify_otp');
 
       } else if (view === 'verify_otp') {
@@ -268,7 +278,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
     login: { title: 'Sign in to BloodBuddy', sub: 'Access your blood requests, donation coordination, and settings.' },
     register: { title: 'Create a BloodBuddy Account', sub: 'One account connects you to request blood when needed or volunteer to donate when able.' },
     forgot_password: { title: 'Reset Your Password', sub: 'Enter your email address to receive an 8-digit verification code.' },
-    verify_otp: { title: 'Verify Email', sub: 'We sent an 8-digit code to your email. Enter it below to proceed.' },
+    verify_otp: { title: 'Verify Email', sub: 'If registered, we sent an 8-digit code to your email. Enter it below.' },
     verify_mfa: { title: 'Two-Factor Authentication', sub: 'Enter the 6-digit code from your authenticator app to log in.' },
     update_password: { title: 'Set New Password', sub: 'Create a new, strong password to secure your account.' }
   };
