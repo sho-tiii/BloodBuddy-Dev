@@ -23,7 +23,6 @@ const inputDateValue = (date) => { const d = new Date(date); const y = d.getFull
 const startOfCurrentMonth = () => { const d = new Date(); return inputDateValue(new Date(d.getFullYear(), d.getMonth(), 1)); };
 const todayInputDate = () => inputDateValue(new Date());
 
-// Cohesive BloodBuddy Logo SVG from LandingPage & DESIGNG
 function BrandLogo({ size = 'md' }) {
   const dims = size === 'lg' ? 'w-[50px] h-[50px]' : 'w-[50px] h-[50px]';
   return (
@@ -35,7 +34,6 @@ function BrandLogo({ size = 'md' }) {
   );
 }
 
-// Theme Switcher Button matching LandingPage & DESIGNG
 function ThemeToggleButton({ theme, onToggle, className = '' }) {
   return (
     <button
@@ -61,39 +59,38 @@ function ThemeToggleButton({ theme, onToggle, className = '' }) {
   );
 }
 
-// Toast Notification styled like DESIGNG.txt
 function Toast({ notice, onClose }) {
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, 15000); 
+    return () => clearTimeout(timer);
+  }, [notice, onClose]);
+
   if (!notice?.message) return null;
 
   let bgConfig = 'bg-brand-surface dark:bg-[#25141a] border-brand-line dark:border-[#3b2328] text-brand-ink dark:text-[#f8ece9]';
-  let iconConfig = (
-    <svg className="w-5 h-5 text-brand-muted" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
+  let iconConfig = <svg className="w-5 h-5 text-brand-muted" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 
   if (notice.type === 'success') {
     bgConfig = 'bg-[#f0f9f4] dark:bg-[#173326] border-[#cceadc] dark:border-brand-ok text-[#115a35] dark:text-[#58cf92]';
-    iconConfig = (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    );
+    iconConfig = <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
   } else if (notice.type === 'error') {
     bgConfig = 'bg-[#fdf3f4] dark:bg-[#3a1a20] border-[#f4c8cb] dark:border-[#6f0818] text-[#d42b3a] dark:text-[#f2606f]';
-    iconConfig = (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-    );
+    iconConfig = <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>;
+  } else if (notice.type === 'warning') {
+    bgConfig = 'bg-amber-50 dark:bg-[#332610] border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-[#e8b64d]';
+    iconConfig = <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
   }
 
-  return (
-    <div role="status" className={cx('fixed top-20 right-4 sm:right-6 z-[100] flex items-start gap-3 p-4 border rounded-2xl shadow-custom animate-[rise_0.3s_ease_both] max-w-sm w-full', bgConfig)}>
+  return createPortal(
+    <div className={`fixed top-20 right-4 sm:right-6 z-[10000] flex items-start gap-3 p-4 border rounded-xl shadow-lg animate-[rise_0.35s_ease_both] max-w-sm w-full ${bgConfig}`}>
       <div className="flex-none mt-0.5">{iconConfig}</div>
-      <p className="flex-1 text-[13.5px] font-bold leading-snug pr-2">{notice.message}</p>
-      <button onClick={onClose} className="flex-none opacity-60 hover:opacity-100 transition p-0.5 -mt-0.5 -mr-1" aria-label="Dismiss notification">✕</button>
-    </div>
+      <p className="flex-1 text-[13.5px] font-medium leading-snug pr-2">{notice.message}</p>
+      <button onClick={onClose} className="flex-none opacity-60 hover:opacity-100 transition p-0.5 -mt-0.5 -mr-1">✕</button>
+    </div>,
+    document.body
   );
 }
 
@@ -156,46 +153,6 @@ function Empty({ title, text }) {
   );
 }
 
-function Modal({ title, subtitle, onClose, children, wide = false }) {
-  useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-brand-ink/40 dark:bg-black/65 p-4 backdrop-blur-sm"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className={cx(
-          'max-h-[90vh] w-full overflow-y-auto rounded-[24px] bg-brand-surface dark:bg-[#25141a] border border-brand-line dark:border-[#3b2328] p-7 md:p-10 shadow-custom animate-[rise_0.2s_ease_both]',
-          wide ? 'max-w-3xl' : 'max-w-lg'
-        )}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
-          <div>
-            <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9] tracking-tight">{title}</h3>
-            {subtitle && <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">{subtitle}</p>}
-          </div>
-          <button
-            onClick={onClose}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-brand-line dark:border-[#3b2328] text-brand-muted hover:text-brand-ink dark:hover:text-white transition"
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
-        </div>
-        <div>{children}</div>
-      </section>
-    </div>
-  );
-}
-
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [session, setSession] = useState(null);
@@ -223,6 +180,8 @@ export default function App() {
   const [forgotError, setForgotError] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const forgotOtpRefs = useRef([]);
+
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Login MFA challenge (Supabase AAL2)
   const [showLoginMfaModal, setShowLoginMfaModal] = useState(false);
@@ -285,7 +244,6 @@ export default function App() {
   const isSuperAdmin = profile?.role === 'super_admin';
   const canAdmin = profile?.role === 'admin' || isSuperAdmin;
 
-  // Global Theme Sync (works on Login, Unauthorized, and Dashboard screens)
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -417,7 +375,6 @@ export default function App() {
 
   const flash = useCallback((message, type = 'success') => {
     setNotice({ message, type });
-    window.setTimeout(() => setNotice(null), 5000);
   }, []);
 
   const checkAdminRole = useCallback(async (userId) => {
@@ -512,8 +469,6 @@ export default function App() {
         return;
       }
 
-      // SIGNED_IN is intentionally processed through the AAL2 gate above.
-      // Do not render the admin workspace until the authenticator code is verified.
       if (event === 'SIGNED_IN') {
         Promise.resolve().then(() => handleAuthenticatedSession(nextSession));
       }
@@ -960,7 +915,6 @@ export default function App() {
     settings: ['Account Settings', 'Manage your personal identity, login credentials, and account security.'],
   };
 
-  // 1. LOADING SCREEN (With Theme Support)
   if (authLoading) {
     return (
       <div className="min-h-screen grid place-items-center bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] font-body transition-colors duration-300">
@@ -975,14 +929,11 @@ export default function App() {
     );
   }
 
-  // 2. LOGIN SCREEN (Cohesive with LandingPage.jsx + Theme Toggle in Header)
   if (!session) {
     return (
       <div className="min-h-screen bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] font-body flex flex-col transition-colors duration-300 relative overflow-hidden">
-        {/* Background Radial Glow from LandingPage */}
         <div className="absolute inset-x-0 -top-16 bottom-0 -z-10 bg-[radial-gradient(60%_70%_at_85%_30%,#fbe3e0,transparent_70%),radial-gradient(40%_50%_at_0%_0%,#f4e7e1,transparent_70%)] dark:bg-[radial-gradient(60%_70%_at_85%_30%,#3a1a20,transparent_70%),radial-gradient(40%_50%_at_0%_0%,#1e1013,transparent_70%)] transition-colors duration-300" />
 
-        {/* Cohesive Top Header with Theme Switcher */}
         <header className="sticky top-0 z-30 bg-brand-bg/90 dark:bg-[#150a0c]/90 backdrop-blur-md border-b border-brand-line dark:border-[#3b2328] transition-colors duration-300">
           <div className="max-w-[1160px] mx-auto px-4 md:px-6 h-[72px] flex items-center justify-between">
             <div className="flex items-center gap-2.5 font-display font-extrabold text-[22px] tracking-tight text-brand-ink dark:text-[#f8ece9]">
@@ -996,7 +947,6 @@ export default function App() {
           </div>
         </header>
 
-        {/* Split Hero + Login Card */}
         <main className="flex-1 flex items-center py-10 md:py-16 px-4 md:px-6">
           <div className="max-w-[1160px] w-full mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-center">
             <div className="space-y-6">
@@ -1044,6 +994,7 @@ export default function App() {
                     id="admin-email"
                     type="email"
                     autoComplete="username"
+                    maxLength={100}
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -1071,6 +1022,7 @@ export default function App() {
                       id="admin-password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
+                      maxLength={128}
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -1119,7 +1071,7 @@ export default function App() {
                   {forgotError && <div role="alert" className="mt-5 rounded-xl border border-[#f4c8cb] bg-[#fdf3f4] p-3 text-[12.5px] font-medium text-[#d42b3a] dark:border-[#6f0818] dark:bg-[#3a1a20] dark:text-[#f2606f]">{forgotError}</div>}
                   <form onSubmit={(e) => { e.preventDefault(); sendForgotRecoveryCode(); }} className="mt-7">
                     <label className="mb-1.5 block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">Email Address</label>
-                    <div className="relative"><div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><input type="email" required autoFocus value={forgotEmail} onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }} placeholder="name@example.com" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg py-3 pl-11 pr-4 text-[15px] text-brand-ink outline-none transition focus:border-brand-accent focus:shadow-[0_0_0_4px_rgba(164,18,31,0.12)] dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]" /></div>
+                    <div className="relative"><div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><input type="email" required maxLength={100} autoFocus value={forgotEmail} onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }} placeholder="name@example.com" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg py-3 pl-11 pr-4 text-[15px] text-brand-ink outline-none transition focus:border-brand-accent focus:shadow-[0_0_0_4px_rgba(164,18,31,0.12)] dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]" /></div>
                     <button type="submit" disabled={forgotLoading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-btn py-4 text-[15px] font-bold text-white shadow-[0_8px_20px_-10px_#a4121f] transition hover:bg-brand-btnHover disabled:opacity-50 dark:bg-[#c9253a] dark:hover:bg-[#e03349]">{forgotLoading ? 'Sending…' : 'Send Recovery Code'} <span>→</span></button>
                   </form>
                 </>
@@ -1145,8 +1097,8 @@ export default function App() {
                   <p className="mx-auto mt-2.5 max-w-[22em] text-center text-[14px] leading-relaxed text-brand-muted dark:text-[#c2a8a9]">Create a new, strong password to secure your administrator account.</p>
                   {forgotError && <div role="alert" className="mt-5 rounded-xl border border-[#f4c8cb] bg-[#fdf3f4] p-3 text-[12.5px] font-medium text-[#d42b3a] dark:border-[#6f0818] dark:bg-[#3a1a20] dark:text-[#f2606f]">{forgotError}</div>}
                   <form onSubmit={(e) => { e.preventDefault(); updateForgotPassword(); }} className="mt-7 space-y-4">
-                    <div><label className="mb-1.5 block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">New Password</label><div className="relative"><input type={forgotShowPassword ? 'text' : 'password'} minLength={8} required value={forgotNewPassword} onChange={(e) => { setForgotNewPassword(e.target.value); setForgotError(''); }} placeholder="Create a strong password" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 pr-14 text-[15px] text-brand-ink outline-none focus:border-brand-accent dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]" /><button type="button" onClick={() => setForgotShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 px-2 text-[12.5px] font-bold text-brand-muted dark:text-[#c2a8a9]">{forgotShowPassword ? 'Hide' : 'Show'}</button></div></div>
-                    <div><label className="mb-1.5 block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">Confirm Password</label><div className="relative"><input type={forgotShowConfirmPassword ? 'text' : 'password'} minLength={8} required value={forgotConfirmPassword} onChange={(e) => { setForgotConfirmPassword(e.target.value); setForgotError(''); }} placeholder="Confirm your password" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 pr-14 text-[15px] text-brand-ink outline-none focus:border-brand-accent dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]" /><button type="button" onClick={() => setForgotShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 px-2 text-[12.5px] font-bold text-brand-muted dark:text-[#c2a8a9]">{forgotShowConfirmPassword ? 'Hide' : 'Show'}</button></div></div>
+                    <div><label className="mb-1.5 block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">New Password</label><div className="relative"><input type={forgotShowPassword ? 'text' : 'password'} minLength={8} maxLength={128} required value={forgotNewPassword} onChange={(e) => { setForgotNewPassword(e.target.value); setForgotError(''); }} placeholder="Create a strong password" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 pr-14 text-[15px] text-brand-ink outline-none focus:border-brand-accent dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]" /><button type="button" onClick={() => setForgotShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 px-2 text-[12.5px] font-bold text-brand-muted dark:text-[#c2a8a9]">{forgotShowPassword ? 'Hide' : 'Show'}</button></div></div>
+                    <div><label className="mb-1.5 block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">Confirm Password</label><div className="relative"><input type={forgotShowConfirmPassword ? 'text' : 'password'} minLength={8} maxLength={128} required value={forgotConfirmPassword} onChange={(e) => { setForgotConfirmPassword(e.target.value); setForgotError(''); }} placeholder="Confirm your password" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 pr-14 text-[15px] text-brand-ink outline-none focus:border-brand-accent dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]" /><button type="button" onClick={() => setForgotShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 px-2 text-[12.5px] font-bold text-brand-muted dark:text-[#c2a8a9]">{forgotShowConfirmPassword ? 'Hide' : 'Show'}</button></div></div>
                     <button type="submit" disabled={forgotLoading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-btn py-4 text-[15px] font-bold text-white shadow-[0_8px_20px_-10px_#a4121f] transition hover:bg-brand-btnHover disabled:opacity-50 dark:bg-[#c9253a] dark:hover:bg-[#e03349]">{forgotLoading ? 'Updating…' : 'Update Password & Log In'} <span>→</span></button>
                   </form>
                 </>
@@ -1210,13 +1162,32 @@ export default function App() {
             </p>
             {authError && <p className="mt-3 text-xs text-brand-accent">{authError}</p>}
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutModal(true)}
               className="mt-6 w-full py-3.5 rounded-2xl bg-brand-btn dark:bg-[#c9253a] text-[14.5px] font-bold text-white shadow-[0_8px_20px_-10px_#a4121f] hover:bg-brand-btnHover transition"
             >
               Sign out
             </button>
           </div>
         </div>
+
+        {/* LOGOUT CONFIRMATION MODAL FOR UNAUTHORIZED */}
+        {showLogoutModal && createPortal(
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowLogoutModal(false); }}>
+            <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[420px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+                <div>
+                  <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Confirm Log Out</h3>
+                  <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Are you sure you want to sign out?</p>
+                </div>
+                <button type="button" onClick={() => setShowLogoutModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowLogoutModal(false)} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition">Cancel</button>
+                <button type="button" onClick={() => { setShowLogoutModal(false); handleLogout(); }} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition hover:bg-brand-btnHover min-w-[120px]">Log Out</button>
+              </div>
+            </div>
+          </div>, document.body
+        )}
       </div>
     );
   }
@@ -1271,7 +1242,7 @@ export default function App() {
             </button>
           </div>
 
-          <div className="px-4 pt-6 flex-1 overflow-y-auto">
+          <div className="px-4 pt-6 flex-1 overflow-y-auto custom-scrollbar">
             {!sidebarCollapsed && <p className="px-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-brand-muted dark:text-[#c2a8a9]">Navigation</p>}
             <nav className="mt-3 space-y-1.5">
               {visibleNav.map((item) => {
@@ -1283,7 +1254,7 @@ export default function App() {
                     className={cx(
                       'group flex w-full items-center rounded-2xl py-3 text-left text-[14px] font-bold transition', sidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3.5',
                       isActive
-                        ? 'bg-brand-btn dark:bg-[#c9253a] text-white shadow-[0_8px_20px_-10px_#a4121f]'
+                        ? 'bg-brand-btn dark:bg-[#c9253a] text-white shadow-[0_8px_20px_-10px_#a4121f] dark:shadow-[0_8px_20px_-10px_#c9253a]'
                         : 'text-brand-muted dark:text-[#c2a8a9] hover:bg-brand-bg2 dark:hover:bg-[#25141a] hover:text-brand-ink dark:hover:text-[#f8ece9]'
                     )}
                   >
@@ -1335,7 +1306,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutModal(true)}
               className={cx('mt-3 flex w-full items-center justify-center rounded-2xl border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] py-3 text-[13.5px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:bg-brand-blush dark:hover:bg-[#3a1a20] transition', sidebarCollapsed ? 'px-2' : 'gap-2 px-4')}
               title={sidebarCollapsed ? 'Log out' : undefined}
             >
@@ -1352,7 +1323,7 @@ export default function App() {
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
-                  className="grid h-10 w-10 flex-none place-items-center rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] text-brand-ink dark:text-[#f8ece9] hover:bg-brand-bg2 dark:hover:bg-[#25141a] transition"
+                  className="grid h-10 w-10 flex-none place-items-center rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] text-brand-ink dark:text-[#f8ece9] hover:bg-brand-bg2 dark:hover:bg-[#1e1013] transition"
                   onClick={() => { if (window.innerWidth < 1024) setMobileNavOpen(true); else setSidebarCollapsed(v => !v); }}
                   aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                   title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -1605,6 +1576,7 @@ export default function App() {
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
+                      maxLength={100}
                       placeholder="Search reason, reporter, details…"
                       className="min-w-0 rounded-xl border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] px-4 py-2.5 text-[13.5px] text-brand-ink dark:text-[#f8ece9] outline-none focus:border-brand-accent sm:w-64"
                     />
@@ -1713,6 +1685,7 @@ export default function App() {
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
+                      maxLength={100}
                       placeholder="Search name, city, blood type…"
                       className="min-w-0 rounded-xl border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] px-4 py-2.5 text-[13.5px] text-brand-ink dark:text-[#f8ece9] outline-none focus:border-brand-accent sm:w-64"
                     />
@@ -1846,6 +1819,7 @@ export default function App() {
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
+                      maxLength={100}
                       placeholder="Search patient, hospital, city…"
                       className="min-w-0 rounded-xl border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] px-4 py-2.5 text-[13.5px] text-brand-ink dark:text-[#f8ece9] outline-none focus:border-brand-accent sm:w-64"
                     />
@@ -1903,26 +1877,78 @@ export default function App() {
 
             {/* TAB 5: USER SETTINGS */}
             {activeTab === 'settings' && (
-              <div className="animate-[rise_0.35s_ease_both] space-y-6">
-                <div><h2 className="font-display text-[32px] font-extrabold tracking-tight text-brand-ink dark:text-[#f8ece9]">Account Settings</h2><p className="mt-1 text-[15px] text-brand-muted dark:text-[#c2a8a9]">Manage your personal identity, login credentials, and account security.</p></div>
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.1fr]">
+              <div className="animate-[rise_0.3s_ease_both] space-y-6">
+                <div>
+                  <h2 className="font-display text-[32px] font-extrabold tracking-tight text-brand-ink dark:text-[#f8ece9]">Account Settings</h2>
+                  <p className="mt-1 text-[15px] text-brand-muted dark:text-[#c2a8a9]">Manage your personal identity, login credentials, and account security.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-start">
                   <div className="space-y-6">
                     <section className="rounded-[24px] border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] p-6 shadow-custom">
-                      <div className="mb-5 flex items-center justify-between"><span className="font-mono text-[12px] uppercase tracking-widest text-brand-muted dark:text-[#c2a8a9]">PERSONAL INFORMATION</span><button onClick={() => {setEditFullName(profile?.full_name || '');setEditAvatarColor(profile?.avatar_color || AVATAR_OPTIONS[0]);setShowEditProfileModal(true);}} className="text-[13px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:underline">Edit Information</button></div>
-                      <div className="mb-5 flex items-center gap-4"><div className={cx('grid h-[52px] w-[52px] place-items-center rounded-full text-[18px] font-bold text-white',profile?.avatar_color || AVATAR_OPTIONS[0])}>{adminInitials}</div><div className="min-w-0"><p className="truncate text-[17px] font-bold text-brand-ink dark:text-[#f8ece9]">{profile?.full_name || 'Administrator'}</p><p className="mt-0.5 truncate text-[13.5px] text-brand-muted dark:text-[#c2a8a9]">{session.user.email}</p></div></div>
-                      <div className="rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] p-3.5 text-[13px] text-brand-muted dark:text-[#c2a8a9]"><b className="text-brand-ink dark:text-[#f8ece9]">Role:</b> {labelize(profile?.role)}</div>
+                      <div className="mb-5 flex items-center justify-between">
+                        <span className="font-mono text-[12px] uppercase tracking-widest text-brand-muted dark:text-[#c2a8a9]">PERSONAL INFORMATION</span>
+                        <button onClick={() => {setEditFullName(profile?.full_name || '');setEditAvatarColor(profile?.avatar_color || AVATAR_OPTIONS[0]);setShowEditProfileModal(true);}} className="text-[13px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:underline">Edit Information</button>
+                      </div>
+                      <div className="mb-6 flex items-center gap-4">
+                        <div className={cx('grid h-[52px] w-[52px] place-items-center rounded-full text-[18px] font-bold text-white',profile?.avatar_color || AVATAR_OPTIONS[0])}>{adminInitials}</div>
+                        <div className="min-w-0">
+                          <p className="truncate text-[17px] font-bold text-brand-ink dark:text-[#f8ece9]">{profile?.full_name || 'Administrator'}</p>
+                          <p className="mt-0.5 truncate text-[13.5px] text-brand-muted dark:text-[#c2a8a9]">{session.user.email}</p>
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] p-3.5 text-[13px] text-brand-muted dark:text-[#c2a8a9] flex items-center justify-between">
+                        <div><b className="text-brand-ink dark:text-[#f8ece9]">Role:</b> {labelize(profile?.role)}</div>
+                      </div>
                     </section>
+
                     <section className="rounded-[24px] border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] p-6 shadow-custom">
                       <span className="font-mono text-[12px] uppercase tracking-widest text-brand-muted dark:text-[#c2a8a9]">APPEARANCE</span>
-                      <div className="mt-5 flex items-center justify-between gap-4"><div><p className="text-[15.5px] font-bold text-brand-ink dark:text-[#f8ece9]">Theme</p><p className="mt-0.5 text-[13px] text-brand-muted dark:text-[#c2a8a9]">Choose light or dark mode for the entire portal.</p></div><div className="flex rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] p-1"><button type="button" onClick={() => setTheme('light')} className={cx('rounded-lg px-3 py-2 text-[12px] font-bold',theme==='light'?'bg-brand-surface dark:bg-[#25141a] text-brand-accent shadow-sm':'text-brand-muted')}>Light</button><button type="button" onClick={() => setTheme('dark')} className={cx('rounded-lg px-3 py-2 text-[12px] font-bold',theme==='dark'?'bg-brand-surface dark:bg-[#25141a] text-brand-accent dark:text-[#ff7d8b] shadow-sm':'text-brand-muted')}>Dark</button></div></div>
+                      <div className="mt-5 flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-[15.5px] font-bold text-brand-ink dark:text-[#f8ece9]">Theme</p>
+                          <p className="mt-0.5 text-[13px] text-brand-muted dark:text-[#c2a8a9]">Choose light or dark mode.</p>
+                        </div>
+                        <div className="flex rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] p-1">
+                          <button type="button" onClick={() => setTheme('light')} className={cx('rounded-lg px-3 py-2 text-[12px] font-bold',theme==='light'?'bg-brand-surface dark:bg-[#25141a] text-brand-accent shadow-sm':'text-brand-muted')}>Light</button>
+                          <button type="button" onClick={() => setTheme('dark')} className={cx('rounded-lg px-3 py-2 text-[12px] font-bold',theme==='dark'?'bg-brand-surface dark:bg-[#25141a] text-brand-accent dark:text-[#ff7d8b] shadow-sm':'text-brand-muted')}>Dark</button>
+                        </div>
+                      </div>
                     </section>
                   </div>
+
                   <div className="space-y-6">
-                    <section className="rounded-[24px] border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] p-6 shadow-custom"><span className="font-mono text-[12px] uppercase tracking-widest text-brand-muted dark:text-[#c2a8a9]">SECURITY & LOGIN</span><div className="mt-5 space-y-5">
-                      <div className="flex items-center justify-between gap-4"><div><p className="text-[15.5px] font-bold text-brand-ink dark:text-[#f8ece9]">Password</p><p className="mt-0.5 text-[13px] text-brand-muted dark:text-[#c2a8a9]">Update your administrator account password.</p></div><button onClick={() => setShowPasswordModal(true)} className="whitespace-nowrap rounded-xl border border-brand-line dark:border-[#3b2328] px-3.5 py-2 text-[12.5px] font-bold text-brand-ink dark:text-[#f8ece9] hover:border-brand-accent">Change Password →</button></div>
-                      <div className="flex items-center justify-between gap-4"><div><p className="text-[15.5px] font-bold text-brand-ink dark:text-[#f8ece9]">Two-Factor Authentication</p><p className="mt-0.5 text-[13px] text-brand-muted dark:text-[#c2a8a9]">Add an extra layer of security to your account.</p></div><button type="button" onClick={handleToggle2FA} className={cx('relative h-[30px] w-[52px] rounded-full',is2FAEnabled?'bg-brand-ok dark:bg-[#58cf92]':'bg-brand-line dark:bg-[#3b2328]')}><span className={cx('absolute left-[3px] top-[3px] h-6 w-6 rounded-full bg-white shadow-sm transition-transform',is2FAEnabled?'translate-x-[22px]':'')}/></button></div>
-                    </div></section>
-                    <section className="rounded-[24px] border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] p-6 shadow-custom"><span className="font-mono text-[12px] uppercase tracking-widest text-brand-muted dark:text-[#c2a8a9]">ADMINISTRATOR MANAGEMENT</span><p className="mt-2 text-[13.5px] leading-relaxed text-brand-muted dark:text-[#c2a8a9]">Super Admins can assign an existing BloodBuddy account as Admin or Super Admin.</p>{isSuperAdmin?<button onClick={openRoleModal} className="mt-4 rounded-xl bg-brand-btn dark:bg-[#c9253a] px-4 py-2.5 text-[13px] font-bold text-white">Add Administrator →</button>:<p className="mt-4 text-[12.5px] font-bold text-brand-muted dark:text-[#c2a8a9]">Super Admin access is required for role management.</p>}</section>
+                    <section className="rounded-[24px] border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] p-6 shadow-custom">
+                      <span className="font-mono text-[12px] uppercase tracking-widest text-brand-muted dark:text-[#c2a8a9] block mb-5">SECURITY & LOGIN</span>
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between gap-4 border-b border-brand-line dark:border-[#3b2328] pb-6">
+                          <div>
+                            <p className="text-[15.5px] font-bold text-brand-ink dark:text-[#f8ece9]">Password</p>
+                            <p className="mt-0.5 text-[13px] text-brand-muted dark:text-[#c2a8a9]">Update your account credentials.</p>
+                          </div>
+                          <button onClick={() => setShowPasswordModal(true)} className="whitespace-nowrap rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] px-3.5 py-2 text-[12.5px] font-bold text-brand-ink dark:text-[#f8ece9] hover:border-brand-accent transition">Change Password →</button>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-[15.5px] font-bold text-brand-ink dark:text-[#f8ece9]">Two-Factor Authentication</p>
+                            <p className="mt-0.5 text-[13px] text-brand-muted dark:text-[#c2a8a9] max-w-[200px]">Add an extra layer of security to your account.</p>
+                          </div>
+                          <button type="button" onClick={handleToggle2FA} className={cx('relative h-[30px] w-[52px] rounded-full transition-colors duration-250',is2FAEnabled?'bg-brand-ok dark:bg-[#58cf92]':'bg-brand-line dark:bg-[#3b2328]')}>
+                            <span className={cx('absolute left-[3px] top-[3px] h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-250',is2FAEnabled?'translate-x-[22px]':'')} />
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="rounded-[24px] border border-brand-line dark:border-[#3b2328] bg-brand-surface dark:bg-[#25141a] p-6 shadow-custom">
+                      <span className="font-mono text-[12px] uppercase tracking-widest text-brand-muted dark:text-[#c2a8a9]">ADMINISTRATOR MANAGEMENT</span>
+                      <p className="mt-2 text-[13.5px] leading-relaxed text-brand-muted dark:text-[#c2a8a9]">Super Admins can assign an existing BloodBuddy account as Admin or Super Admin.</p>
+                      {isSuperAdmin ? (
+                        <button onClick={openRoleModal} className="mt-4 rounded-xl bg-brand-btn dark:bg-[#c9253a] px-4 py-2.5 text-[13px] font-bold text-white transition hover:bg-brand-btnHover">Add Administrator →</button>
+                      ) : (
+                        <p className="mt-4 text-[12.5px] font-bold text-brand-muted dark:text-[#c2a8a9]">Super Admin access is required for role management.</p>
+                      )}
+                    </section>
                   </div>
                 </div>
               </div>
@@ -1941,7 +1967,7 @@ export default function App() {
                 {auditLogs.length ? (
                   <div className="divide-y divide-brand-line dark:divide-[#3b2328]">
                     {auditLogs.map((log) => (
-                      <div key={log.id} className="flex flex-col gap-3 p-6 sm:flex-row sm:items-start">
+                      <div key={log.id} className="flex flex-col gap-3 p-6 sm:flex-row sm:items-start transition hover:bg-brand-bg2 dark:hover:bg-[#1e1013]">
                         <div className="grid h-10 w-10 flex-none place-items-center rounded-2xl bg-violet-50 dark:bg-[#2a173d] text-violet-700 dark:text-[#c4b5fd] border border-violet-200 dark:border-violet-900/50">
                           ▤
                         </div>
@@ -1969,30 +1995,94 @@ export default function App() {
         </div>
       </div>
 
-      {showEditProfileModal && createPortal(<div className="fixed inset-0 z-[10001] flex items-center justify-center bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/65" onMouseDown={(e)=>e.target===e.currentTarget&&setShowEditProfileModal(false)}><section role="dialog" aria-modal="true" className="w-full max-w-lg rounded-[24px] border border-brand-line bg-brand-surface p-7 md:p-10 shadow-custom dark:border-[#3b2328] dark:bg-[#25141a]"><div className="flex items-start justify-between border-b border-brand-line pb-4 dark:border-[#3b2328]"><div><h3 className="font-display text-[22px] font-extrabold text-brand-ink dark:text-[#f8ece9]">Edit Profile</h3><p className="mt-1 text-[13.5px] text-brand-muted dark:text-[#c2a8a9]">Update your administrator profile.</p></div><button onClick={()=>setShowEditProfileModal(false)}>✕</button></div><form onSubmit={handleSaveProfile} className="mt-5 space-y-5"><input value={editFullName} onChange={(e)=>setEditFullName(e.target.value)} required placeholder="Full name" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 text-[14px] dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]"/><div><p className="mb-2 text-[13.5px] font-bold text-brand-ink dark:text-[#f8ece9]">Avatar color</p><div className="flex flex-wrap gap-3">{AVATAR_OPTIONS.map(c=><button key={c} type="button" onClick={()=>setEditAvatarColor(c)} className={cx('h-10 w-10 rounded-full border-2',c,editAvatarColor===c?'border-brand-ink dark:border-white':'border-transparent')}/>)}</div></div><div className="flex justify-end gap-3 border-t border-brand-line pt-5 dark:border-[#3b2328]"><button type="button" onClick={()=>setShowEditProfileModal(false)} className="rounded-xl border border-brand-line px-5 py-2.5 text-[13.5px] font-bold dark:border-[#3b2328]">Cancel</button><button disabled={isSavingProfile} className="rounded-xl bg-brand-btn px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-50">{isSavingProfile?'Saving…':'Save Changes'}</button></div></form></section></div>,document.body)}
+      {/* ALL MODALS (Standardized Styling) */}
 
-      {showPasswordModal && createPortal(<div className="fixed inset-0 z-[10001] flex items-center justify-center bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/65" onMouseDown={(e)=>e.target===e.currentTarget&&!isSavingPassword&&setShowPasswordModal(false)}><section role="dialog" aria-modal="true" className="w-full max-w-lg rounded-[24px] border border-brand-line bg-brand-surface p-7 md:p-10 shadow-custom dark:border-[#3b2328] dark:bg-[#25141a]"><h3 className="font-display text-[22px] font-extrabold text-brand-ink dark:text-[#f8ece9]">Change Password</h3><p className="mt-1 text-[13.5px] text-brand-muted dark:text-[#c2a8a9]">Set a new password for your administrator account.</p><form onSubmit={handleSavePassword} className="mt-5 space-y-4"><input type={showPasswordFields?'text':'password'} value={newPassword} onChange={(e)=>setNewPassword(e.target.value)} minLength={8} required placeholder="New password" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]"/><input type={showPasswordFields?'text':'password'} value={confirmNewPassword} onChange={(e)=>setConfirmNewPassword(e.target.value)} minLength={8} required placeholder="Confirm new password" className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]"/><label className="text-[12.5px] text-brand-muted"><input type="checkbox" checked={showPasswordFields} onChange={(e)=>setShowPasswordFields(e.target.checked)} className="mr-2"/>Show passwords</label><div className="flex justify-end gap-3"><button type="button" onClick={()=>setShowPasswordModal(false)} className="rounded-xl border border-brand-line px-5 py-2.5 font-bold dark:border-[#3b2328]">Cancel</button><button disabled={isSavingPassword} className="rounded-xl bg-brand-btn px-5 py-2.5 font-bold text-white">{isSavingPassword?'Updating…':'Update Password'}</button></div></form></section></div>,document.body)}
-
-      {showMfaModal && createPortal(
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" aria-labelledby="admin-mfa-modal-title" onMouseDown={(e) => { if (e.target === e.currentTarget && !isEnrollingMfa) setShowMfaModal(false); }}>
-          <section className="max-h-[90vh] w-full max-w-[500px] overflow-y-auto rounded-[24px] border border-brand-line bg-brand-surface p-7 md:p-10 shadow-custom animate-[rise_0.2s_ease_both] dark:border-[#3b2328] dark:bg-[#25141a]" onMouseDown={(e) => e.stopPropagation()}>
+      {showEditProfileModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget && !isSavingProfile) setShowEditProfileModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
               <div>
-                <h3 id="admin-mfa-modal-title" className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Set Up Two-Factor Authentication</h3>
-                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">{mfaStep === 1 ? 'Use an authenticator app to protect your administrator account.' : 'Scan the QR code, then enter the generated 6-digit code.'}</p>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Edit Profile</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Update your administrator profile.</p>
               </div>
-              <button type="button" onClick={() => setShowMfaModal(false)} disabled={isEnrollingMfa} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50" aria-label="Close MFA setup dialog">✕</button>
+              <button type="button" onClick={() => setShowEditProfileModal(false)} disabled={isSavingProfile} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50">✕</button>
+            </div>
+            <form onSubmit={handleSaveProfile} className="space-y-5">
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Full Name</label>
+                <input type="text" maxLength={50} required value={editFullName} onChange={(e) => setEditFullName(e.target.value)} disabled={isSavingProfile} autoFocus className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" placeholder="Your full name" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-2">Avatar Color</p>
+                <div className="flex flex-wrap gap-2.5">
+                  {AVATAR_OPTIONS.map((avatarClass) => (
+                    <button key={avatarClass} type="button" onClick={() => setEditAvatarColor(avatarClass)} disabled={isSavingProfile} className={`w-9 h-9 rounded-full ${avatarClass} transition ring-offset-2 dark:ring-offset-[#25141a] ${editAvatarColor === avatarClass ? 'ring-2 ring-brand-accent' : 'hover:scale-105'}`}>
+                      {editAvatarColor === avatarClass && <span className="text-white text-sm font-bold">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-2 flex justify-end gap-3 border-t border-brand-line dark:border-[#3b2328] mt-4">
+                <button type="button" onClick={() => setShowEditProfileModal(false)} disabled={isSavingProfile} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={isSavingProfile || !editFullName.trim()} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[130px]">{isSavingProfile ? 'Saving...' : 'Save Changes'}</button>
+              </div>
+            </form>
+          </div>
+        </div>, document.body
+      )}
+
+      {showPasswordModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget && !isSavingPassword) setShowPasswordModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Change Password</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Set a new password for your administrator account.</p>
+              </div>
+              <button type="button" onClick={() => setShowPasswordModal(false)} disabled={isSavingPassword} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50">✕</button>
+            </div>
+            <form onSubmit={handleSavePassword} className="space-y-4">
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">New Password</label>
+                <input type={showPasswordFields ? 'text' : 'password'} maxLength={128} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Create a strong password" className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" />
+              </div>
+              <div>
+                <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Confirm Password</label>
+                <input type={showPasswordFields ? 'text' : 'password'} maxLength={128} required value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Confirm your password" className="w-full text-[15px] border-[1.5px] border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] text-brand-ink dark:text-[#f8ece9] rounded-xl px-4 py-3 focus:outline-none focus:border-brand-accent transition disabled:opacity-60" />
+              </div>
+              <label className="flex items-center gap-2 text-[13px] text-brand-muted dark:text-[#c2a8a9] cursor-pointer">
+                <input type="checkbox" checked={showPasswordFields} onChange={(e) => setShowPasswordFields(e.target.checked)} className="w-4 h-4 accent-brand-accent" />
+                Show passwords
+              </label>
+              <div className="pt-3 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowPasswordModal(false)} disabled={isSavingPassword} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={isSavingPassword} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[150px]">{isSavingPassword ? 'Updating...' : 'Update Password'}</button>
+              </div>
+            </form>
+          </div>
+        </div>, document.body
+      )}
+
+      {showMfaModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget && !isEnrollingMfa) setShowMfaModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Set Up Two-Factor Authentication</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">{mfaStep === 1 ? 'Use an authenticator app to protect your account.' : 'Scan the QR code, then verify the generated code.'}</p>
+              </div>
+              <button type="button" onClick={() => setShowMfaModal(false)} disabled={isEnrollingMfa} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50">✕</button>
             </div>
 
             {mfaStep === 1 ? (
               <div className="space-y-5">
                 <div className="rounded-xl border border-brand-line bg-brand-bg p-4 dark:border-[#3b2328] dark:bg-[#150a0c]">
-                  <p className="text-[13.5px] text-brand-ink dark:text-[#f8ece9] leading-relaxed">You will receive a QR code from Supabase. Add it to Google Authenticator, Microsoft Authenticator, or another compatible TOTP app, then enter the one-time code to finish enabling MFA.</p>
+                  <p className="text-[13.5px] text-brand-ink dark:text-[#f8ece9] leading-relaxed">You will receive a QR code from Supabase. Add it to a compatible TOTP app, then enter the one-time code to finish enabling MFA.</p>
                 </div>
                 {mfaError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{mfaError}</p>}
-                <div className="flex justify-end gap-3">
-                  <button type="button" onClick={() => setShowMfaModal(false)} disabled={isEnrollingMfa} className="rounded-xl border border-brand-line bg-brand-bg px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]">Cancel</button>
-                  <button type="button" onClick={startEnrollMfa} disabled={isEnrollingMfa} className="min-w-[140px] rounded-xl bg-brand-btn px-5 py-2.5 text-[14px] font-bold text-brand-onBtn shadow-sm transition disabled:opacity-70 dark:bg-[#c9253a]">{isEnrollingMfa ? 'Preparing…' : 'Start Setup'}</button>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => setShowMfaModal(false)} disabled={isEnrollingMfa} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button>
+                  <button type="button" onClick={startEnrollMfa} disabled={isEnrollingMfa} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[140px]">{isEnrollingMfa ? 'Preparing...' : 'Start Setup'}</button>
                 </div>
               </div>
             ) : (
@@ -2004,141 +2094,211 @@ export default function App() {
                   <p className="mb-2 text-[12.5px] text-brand-muted dark:text-[#c2a8a9]">If you cannot scan the QR code, enter this setup key manually:</p>
                   <div className="flex gap-2">
                     <code className="min-w-0 flex-1 break-all rounded-xl border border-brand-line bg-brand-bg px-3 py-2.5 text-[12px] text-brand-ink dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]">{mfaSecret || 'Secret unavailable'}</code>
-                    <button type="button" onClick={handleCopySecret} disabled={!mfaSecret} className="rounded-xl border border-brand-line bg-brand-bg px-3 py-2.5 text-[12.5px] font-bold text-brand-ink dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9] disabled:opacity-50">Copy</button>
+                    <button type="button" onClick={handleCopySecret} disabled={!mfaSecret} className="px-4 py-2.5 text-[12.5px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl disabled:opacity-50 transition hover:opacity-80">Copy</button>
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="admin-mfa-code" className="mb-1.5 block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">6-digit authenticator code</label>
-                  <input id="admin-mfa-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" required autoFocus value={mfaVerifyCode} onChange={(e) => { const value = e.target.value.replace(/\D/g, '').slice(0, 6); setMfaVerifyCode(value); if (mfaError) setMfaError(''); }} disabled={isEnrollingMfa} className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3.5 text-center font-mono text-[18px] tracking-[0.25em] text-brand-ink outline-none transition focus:border-brand-accent dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9] disabled:opacity-60" placeholder="000000" />
+                  <label className="mb-1.5 block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">6-digit authenticator code</label>
+                  <input inputMode="numeric" autoComplete="one-time-code" maxLength={6} required autoFocus value={mfaVerifyCode} onChange={(e) => { const value = e.target.value.replace(/\D/g, '').slice(0, 6); setMfaVerifyCode(value); if (mfaError) setMfaError(''); }} disabled={isEnrollingMfa} className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3.5 text-center font-mono text-[18px] tracking-[0.25em] text-brand-ink outline-none transition focus:border-brand-accent dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9] disabled:opacity-60" placeholder="000000" />
                 </div>
                 {mfaError && <p className="text-[12.5px] font-medium text-brand-crimsonHi dark:text-[#f2606f]" role="alert">{mfaError}</p>}
                 <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => { if (isEnrollingMfa) return; setMfaStep(1); setMfaError(''); setMfaVerifyCode(''); }} disabled={isEnrollingMfa} className="rounded-xl border border-brand-line bg-brand-bg px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]">Back</button>
-                  <button type="submit" disabled={isEnrollingMfa || mfaVerifyCode.length !== 6} className="min-w-[150px] rounded-xl bg-brand-btn px-5 py-2.5 text-[14px] font-bold text-brand-onBtn shadow-sm transition disabled:opacity-70 dark:bg-[#c9253a]">{isEnrollingMfa ? 'Verifying…' : 'Verify & Enable'}</button>
+                  <button type="button" onClick={() => { if (isEnrollingMfa) return; setMfaStep(1); setMfaError(''); setMfaVerifyCode(''); }} disabled={isEnrollingMfa} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Back</button>
+                  <button type="submit" disabled={isEnrollingMfa || mfaVerifyCode.length !== 6} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition disabled:opacity-70 min-w-[150px]">{isEnrollingMfa ? 'Verifying...' : 'Verify & Enable'}</button>
                 </div>
               </form>
             )}
-          </section>
-        </div>,
-        document.body
+          </div>
+        </div>, document.body
       )}
 
-      {showDisableMfaModal && createPortal(<div className="fixed inset-0 z-[10001] flex items-center justify-center bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/65" onMouseDown={(e)=>e.target===e.currentTarget&&!isDisablingMfa&&setShowDisableMfaModal(false)}><section role="dialog" aria-modal="true" className="w-full max-w-md rounded-[24px] border border-brand-line bg-brand-surface p-7 md:p-10 shadow-custom dark:border-[#3b2328] dark:bg-[#25141a]"><h3 className="font-display text-[22px] font-extrabold text-brand-ink dark:text-[#f8ece9]">Disable 2FA?</h3><p className="mt-2 text-[14px] text-brand-muted dark:text-[#c2a8a9]">This removes the verified authenticator factor from your administrator account.</p><div className="mt-5 rounded-xl bg-amber-50 p-3 text-[12.5px] text-amber-800 dark:bg-[#332610] dark:text-[#e8b64d]">Keeping 2FA enabled is strongly recommended for administrators.</div><div className="mt-6 flex justify-end gap-3"><button disabled={isDisablingMfa} onClick={()=>setShowDisableMfaModal(false)} className="rounded-xl border border-brand-line px-5 py-2.5 font-bold dark:border-[#3b2328]">Cancel</button><button disabled={isDisablingMfa} onClick={disableMfa} className="rounded-xl bg-brand-btn px-5 py-2.5 font-bold text-white">{isDisablingMfa?'Disabling…':'Disable 2FA'}</button></div></section></div>,document.body)}
+      {showDisableMfaModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget && !isDisablingMfa) setShowDisableMfaModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[460px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Disable 2FA?</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">This removes the verified authenticator factor from your account.</p>
+              </div>
+              <button type="button" onClick={() => setShowDisableMfaModal(false)} disabled={isDisablingMfa} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50">✕</button>
+            </div>
+            <div className="mt-5 rounded-xl bg-amber-50 p-4 text-[13px] text-amber-800 dark:bg-[#332610] dark:text-[#e8b64d]">
+              Keeping Two-Factor Authentication enabled is strongly recommended for all administrator accounts.
+            </div>
+            <div className="flex justify-end gap-3 pt-6">
+              <button disabled={isDisablingMfa} onClick={() => setShowDisableMfaModal(false)} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button>
+              <button disabled={isDisablingMfa} onClick={disableMfa} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition hover:opacity-90 disabled:opacity-70 min-w-[130px]">{isDisablingMfa ? 'Disabling...' : 'Disable 2FA'}</button>
+            </div>
+          </div>
+        </div>, document.body
+      )}
 
-      {showRoleModal && createPortal(<div className="fixed inset-0 z-[10001] flex items-center justify-center bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/65" onMouseDown={(e)=>e.target===e.currentTarget&&!isSavingRole&&setShowRoleModal(false)}><section role="dialog" aria-modal="true" className="w-full max-w-lg rounded-[24px] border border-brand-line bg-brand-surface p-7 md:p-10 shadow-custom dark:border-[#3b2328] dark:bg-[#25141a]"><div className="flex items-start justify-between border-b border-brand-line pb-4 dark:border-[#3b2328]"><div><h3 className="font-display text-[22px] font-extrabold text-brand-ink dark:text-[#f8ece9]">Add Administrator</h3><p className="mt-1 text-[13.5px] text-brand-muted dark:text-[#c2a8a9]">Assign an administrator role to an existing BloodBuddy account.</p></div><button onClick={()=>setShowRoleModal(false)}>✕</button></div><form onSubmit={saveAdministratorRole} className="mt-5 space-y-4"><select value={roleTargetId} onChange={(e)=>setRoleTargetId(e.target.value)} required className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]"><option value="">Select a community account…</option>{users.filter(u=>u.id!==session.user.id&&u.role!=='super_admin').map(u=><option key={u.id} value={u.id}>{u.full_name||'Unnamed member'} · {u.role||'user'}</option>)}</select><select value={roleTargetRole} onChange={(e)=>setRoleTargetRole(e.target.value)} className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]"><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select><div className="rounded-xl bg-amber-50 p-3 text-[12.5px] text-amber-800 dark:bg-[#332610] dark:text-[#e8b64d]">This changes the existing account's <code>profiles.role</code>. It does not create a new Supabase Auth account.</div><div className="flex justify-end gap-3"><button type="button" onClick={()=>setShowRoleModal(false)} className="rounded-xl border border-brand-line px-5 py-2.5 font-bold dark:border-[#3b2328]">Cancel</button><button disabled={isSavingRole||!roleTargetId} className="rounded-xl bg-brand-btn px-5 py-2.5 font-bold text-white">{isSavingRole?'Saving…':'Assign Role'}</button></div></form></section></div>,document.body)}
+      {showRoleModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget && !isSavingRole) setShowRoleModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[500px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Add Administrator</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Assign an administrator role to an existing account.</p>
+              </div>
+              <button onClick={() => setShowRoleModal(false)} disabled={isSavingRole} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition disabled:opacity-50">✕</button>
+            </div>
+            <form onSubmit={saveAdministratorRole} className="space-y-4">
+              <select value={roleTargetId} onChange={(e) => setRoleTargetId(e.target.value)} required className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 text-[14px] text-brand-ink outline-none focus:border-brand-accent dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]">
+                <option value="">Select a community account…</option>
+                {users.filter(u => u.id !== session.user.id && u.role !== 'super_admin').map(u => (
+                  <option key={u.id} value={u.id}>{u.full_name || 'Unnamed member'} · {u.role || 'user'}</option>
+                ))}
+              </select>
+              <select value={roleTargetRole} onChange={(e) => setRoleTargetRole(e.target.value)} className="w-full rounded-xl border-[1.5px] border-brand-line bg-brand-bg px-4 py-3 text-[14px] text-brand-ink outline-none focus:border-brand-accent dark:border-[#3b2328] dark:bg-[#150a0c] dark:text-[#f8ece9]">
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+              <div className="rounded-xl bg-amber-50 p-3.5 text-[12.5px] text-amber-800 dark:bg-[#332610] dark:text-[#e8b64d]">
+                This changes the existing account's <code>profiles.role</code>. It does not create a new Supabase Auth account.
+              </div>
+              <div className="flex justify-end gap-3 pt-3">
+                <button type="button" onClick={() => setShowRoleModal(false)} disabled={isSavingRole} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={isSavingRole || !roleTargetId} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition hover:opacity-90 disabled:opacity-70 min-w-[130px]">{isSavingRole ? 'Saving...' : 'Assign Role'}</button>
+              </div>
+            </form>
+          </div>
+        </div>, document.body
+      )}
 
       {/* REPORT INSPECTION MODAL */}
-      {selectedReport && (
-        <Modal
-          title="Incident Report Details"
-          subtitle={`Submitted on ${dateTime(selectedReport.created_at)}`}
-          onClose={() => setSelectedReport(null)}
-          wide
-        >
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="warn">{labelize(selectedReport.reason)}</Pill>
-              <Pill tone={toneForStatus(selectedReport.status)}>{labelize(selectedReport.status || 'pending')}</Pill>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className={cx('rounded-2xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c]', sidebarCollapsed ? 'p-2' : 'p-4')}>
-                <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-brand-muted dark:text-[#c2a8a9]">Reporter</p>
-                <p className="mt-1 text-[15px] font-bold text-brand-ink dark:text-[#f8ece9]">{selectedReport.reporter?.full_name || 'Unknown'}</p>
-                <p className="mt-1 break-all font-mono text-[11px] text-brand-muted dark:text-[#c2a8a9]">{selectedReport.reporter_id || '—'}</p>
+      {selectedReport && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget) setSelectedReport(null); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-3xl w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Incident Report Details</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Submitted on {dateTime(selectedReport.created_at)}</p>
               </div>
-              <div className={cx('rounded-2xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c]', sidebarCollapsed ? 'p-2' : 'p-4')}>
-                <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-brand-muted dark:text-[#c2a8a9]">Reported Account</p>
-                <p className="mt-1 text-[15px] font-bold text-brand-accent dark:text-[#ff7d8b]">{selectedReport.reported?.full_name || 'Unknown'}</p>
-                <p className="mt-1 break-all font-mono text-[11px] text-brand-muted dark:text-[#c2a8a9]">{selectedReport.reported_user_id || '—'}</p>
+              <button onClick={() => setSelectedReport(null)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
+            </div>
+            
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone="warn">{labelize(selectedReport.reason)}</Pill>
+                <Pill tone={toneForStatus(selectedReport.status)}>{labelize(selectedReport.status || 'pending')}</Pill>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] p-4">
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-brand-muted dark:text-[#c2a8a9]">Reporter</p>
+                  <p className="mt-1 text-[15px] font-bold text-brand-ink dark:text-[#f8ece9]">{selectedReport.reporter?.full_name || 'Unknown'}</p>
+                  <p className="mt-1 break-all font-mono text-[11px] text-brand-muted dark:text-[#c2a8a9]">{selectedReport.reporter_id || '—'}</p>
+                </div>
+                <div className="rounded-2xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] p-4">
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-brand-muted dark:text-[#c2a8a9]">Reported Account</p>
+                  <p className="mt-1 text-[15px] font-bold text-brand-accent dark:text-[#ff7d8b]">{selectedReport.reported?.full_name || 'Unknown'}</p>
+                  <p className="mt-1 break-all font-mono text-[11px] text-brand-muted dark:text-[#c2a8a9]">{selectedReport.reported_user_id || '—'}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">Submitted Narrative</p>
+                <div className="min-h-24 whitespace-pre-wrap rounded-2xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] p-4 text-[14px] leading-relaxed text-brand-ink dark:text-[#f8ece9]">
+                  {selectedReport.details || 'No additional details provided.'}
+                </div>
+              </div>
+
+              {(selectedReport.attachment_url || selectedReport.evidence_url) && (() => {
+                const rawUrl = selectedReport.attachment_url || selectedReport.evidence_url;
+                let finalUrl = rawUrl;
+                if (!rawUrl.startsWith('http')) {
+                  const { data } = supabase.storage.from('reports').getPublicUrl(rawUrl);
+                  finalUrl = data.publicUrl;
+                }
+                return (
+                  <div>
+                    <a href={finalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[13.5px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:underline">
+                      Open attached evidence ↗
+                    </a>
+                  </div>
+                );
+              })()}
+
+              <div className="flex flex-wrap justify-end gap-3 border-t border-brand-line dark:border-[#3b2328] pt-5">
+                <button onClick={() => setSelectedReport(null)} className="rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] px-5 py-2.5 text-[13.5px] font-bold text-brand-ink dark:text-[#f8ece9] hover:opacity-80 transition">
+                  Close
+                </button>
+                {!['resolved', 'dismissed'].includes(String(selectedReport.status || '').toLowerCase()) && (
+                  <>
+                    <button
+                      disabled={busyId === selectedReport.id}
+                      onClick={() => executeReportStatusUpdate(selectedReport, 'dismissed')}
+                      className="rounded-xl bg-brand-blush dark:bg-[#3a1a20] border border-brand-accent/25 px-5 py-2.5 text-[13.5px] font-bold text-brand-accent dark:text-[#ff7d8b] hover:opacity-90 disabled:opacity-50 transition"
+                    >
+                      Dismiss Report
+                    </button>
+                    <button
+                      disabled={busyId === selectedReport.id}
+                      onClick={() => executeReportStatusUpdate(selectedReport, 'resolved')}
+                      className="rounded-xl bg-brand-ok dark:bg-[#58cf92] px-5 py-2.5 text-[13.5px] font-bold text-white dark:text-[#173326] hover:opacity-90 disabled:opacity-50 transition"
+                    >
+                      Mark Resolved
+                    </button>
+                  </>
+                )}
               </div>
             </div>
+          </div>
+        </div>, document.body
+      )}
 
-            <div>
-              <p className="mb-2 text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">Submitted Narrative</p>
-              <div className="min-h-24 whitespace-pre-wrap rounded-2xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] p-4 text-[14px] leading-relaxed text-brand-ink dark:text-[#f8ece9]">
-                {selectedReport.details || 'No additional details provided.'}
+      {/* CUSTOM CONFIRMATION MODAL */}
+      {confirmDialog && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmDialog(null); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[460px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">{confirmDialog.title}</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">{confirmDialog.subtitle}</p>
               </div>
+              <button onClick={() => setConfirmDialog(null)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
             </div>
-
-            {(selectedReport.attachment_url || selectedReport.evidence_url) && (() => {
-  const rawUrl = selectedReport.attachment_url || selectedReport.evidence_url;
-  
-  // Mas ligtas gamitin ang built-in Supabase function para i-generate ang tamang URL
-  let finalUrl = rawUrl;
-  if (!rawUrl.startsWith('http')) {
-    const { data } = supabase.storage.from('reports').getPublicUrl(rawUrl);
-    finalUrl = data.publicUrl;
-  }
-
-  return (
-    <div>
-      <a
-        href={finalUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-2 text-[13.5px] font-bold text-brand-accent dark:text-[#ff7d8b] underline"
-      >
-        Open attached evidence ↗
-      </a>
-    </div>
-  );
-})()}
-
-            <div className="flex flex-wrap justify-end gap-3 border-t border-brand-line dark:border-[#3b2328] pt-5">
+            <div className="flex justify-end gap-3 pt-2">
               <button
-                onClick={() => setSelectedReport(null)}
-                className="rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] px-5 py-2.5 text-[13.5px] font-bold text-brand-ink dark:text-[#f8ece9]"
+                onClick={() => setConfirmDialog(null)}
+                className="rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] hover:opacity-80 transition"
               >
-                Close
+                Cancel
               </button>
-              {!['resolved', 'dismissed'].includes(String(selectedReport.status || '').toLowerCase()) && (
-                <>
-                  <button
-                    disabled={busyId === selectedReport.id}
-                    onClick={() => executeReportStatusUpdate(selectedReport, 'dismissed')}
-                    className="rounded-xl bg-brand-blush dark:bg-[#3a1a20] border border-brand-accent/25 px-5 py-2.5 text-[13.5px] font-bold text-brand-accent dark:text-[#ff7d8b] disabled:opacity-50"
-                  >
-                    Dismiss Report
-                  </button>
-                  <button
-                    disabled={busyId === selectedReport.id}
-                    onClick={() => executeReportStatusUpdate(selectedReport, 'resolved')}
-                    className="rounded-xl bg-brand-ok dark:bg-[#58cf92] px-5 py-2.5 text-[13.5px] font-bold text-white dark:text-[#173326] disabled:opacity-50"
-                  >
-                    Mark Resolved
-                  </button>
-                </>
-              )}
+              <button
+                onClick={confirmDialog.onConfirm}
+                className={cx(
+                  'rounded-xl px-5 py-2.5 text-[14px] font-bold text-white shadow-sm transition hover:opacity-90 min-w-[120px]',
+                  confirmDialog.tone === 'good' ? 'bg-brand-ok dark:bg-[#58cf92] dark:text-[#173326]' : 'bg-brand-btn dark:bg-[#c9253a]'
+                )}
+              >
+                {confirmDialog.confirmLabel}
+              </button>
             </div>
           </div>
-        </Modal>
+        </div>, document.body
       )}
 
-      {/* CUSTOM CONFIRMATION MODAL (Replaces native window.confirm per DoD) */}
-      {confirmDialog && (
-        <Modal title={confirmDialog.title} subtitle={confirmDialog.subtitle} onClose={() => setConfirmDialog(null)}>
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              onClick={() => setConfirmDialog(null)}
-              className="rounded-xl border border-brand-line dark:border-[#3b2328] bg-brand-bg dark:bg-[#150a0c] px-5 py-2.5 text-[13.5px] font-bold text-brand-ink dark:text-[#f8ece9]"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={confirmDialog.onConfirm}
-              className={cx(
-                'rounded-xl px-5 py-2.5 text-[13.5px] font-bold text-white shadow-sm transition',
-                confirmDialog.tone === 'good'
-                  ? 'bg-brand-ok dark:bg-[#58cf92] dark:text-[#173326]'
-                  : 'bg-brand-btn dark:bg-[#c9253a]'
-              )}
-            >
-              {confirmDialog.confirmLabel}
-            </button>
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && createPortal(
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-brand-ink/40 p-4 backdrop-blur-sm dark:bg-black/60" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowLogoutModal(false); }}>
+          <div className="bg-brand-surface dark:bg-[#25141a] rounded-3xl max-w-[420px] w-full p-7 md:p-8 shadow-custom animate-[rise_0.2s_ease_both]" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-brand-line dark:border-[#3b2328] pb-4 mb-5">
+              <div>
+                <h3 className="font-display font-extrabold text-[22px] text-brand-ink dark:text-[#f8ece9]">Confirm Log Out</h3>
+                <p className="text-[13.5px] text-brand-muted dark:text-[#c2a8a9] mt-0.5">Are you sure you want to sign out of the Admin Portal?</p>
+              </div>
+              <button type="button" onClick={() => setShowLogoutModal(false)} className="text-brand-muted hover:text-brand-ink dark:hover:text-white transition">✕</button>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={() => setShowLogoutModal(false)} className="px-4 py-2.5 text-[14px] font-bold text-brand-ink dark:text-[#f8ece9] bg-brand-bg dark:bg-[#150a0c] border border-brand-line dark:border-[#3b2328] rounded-xl hover:opacity-80 transition">Cancel</button>
+              <button type="button" onClick={() => { setShowLogoutModal(false); handleLogout(); }} className="px-5 py-2.5 text-[14px] font-bold text-white bg-brand-btn dark:bg-[#c9253a] rounded-xl shadow-sm transition hover:bg-brand-btnHover min-w-[120px]">Log Out</button>
+            </div>
           </div>
-        </Modal>
+        </div>, document.body
       )}
+
     </div>
   );
 }
