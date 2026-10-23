@@ -1032,9 +1032,9 @@ export default function LandingPage({
                         className="w-full h-14 text-[15px] text-brand-ink dark:text-[#f8ece9] placeholder:text-brand-muted/70 dark:placeholder:text-[#c2a8a9]/60 bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-2xl pl-12 pr-4 focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:ring-4 focus:ring-brand-accent/10 dark:focus:ring-[#ff7d8b]/10 transition" 
                       />
                       {showCityDropdown && (
-                        <div className="absolute z-50 left-0 right-0 bottom-full mb-2 max-h-[min(18rem,45vh)] overflow-hidden rounded-[20px] border border-brand-line/90 dark:border-[#513038] bg-white dark:bg-[#25141a] shadow-[0_22px_55px_-20px_rgba(76,12,24,0.32)] dark:shadow-[0_22px_55px_-20px_rgba(0,0,0,0.6)] ring-1 ring-black/[0.025] dark:ring-white/[0.04] animate-[rise_0.16s_ease-out_both]">
+                        <div className="relative z-30 mt-2 w-full max-h-[min(18rem,45vh)] overflow-hidden rounded-[20px] border border-brand-line/90 dark:border-[#513038] bg-white dark:bg-[#25141a] shadow-[0_16px_36px_-18px_rgba(76,12,24,0.24)] dark:shadow-[0_16px_36px_-18px_rgba(0,0,0,0.5)] ring-1 ring-black/[0.025] dark:ring-white/[0.04] animate-[rise_0.16s_ease-out_both]">
                           {filteredCities.length > 0 ? (
-                            <ul role="listbox" aria-label="City suggestions" className="max-h-64 overflow-y-auto overscroll-contain p-1.5 custom-scrollbar">
+                            <ul role="listbox" aria-label="City suggestions" className="max-h-[min(18rem,45vh)] overflow-y-auto overscroll-contain p-1.5 custom-scrollbar">
                               {filteredCities.map((city, index) => {
                                 const isSelected = location === city;
                                 return (
