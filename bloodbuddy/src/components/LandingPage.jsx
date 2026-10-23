@@ -1032,15 +1032,7 @@ export default function LandingPage({
                         className="w-full h-14 text-[15px] text-brand-ink dark:text-[#f8ece9] placeholder:text-brand-muted/70 dark:placeholder:text-[#c2a8a9]/60 bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-2xl pl-12 pr-4 focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:ring-4 focus:ring-brand-accent/10 dark:focus:ring-[#ff7d8b]/10 transition" 
                       />
                       {showCityDropdown && (
-                        <div className="absolute z-40 left-0 right-0 mt-2 overflow-hidden rounded-[20px] border border-brand-line/90 dark:border-[#513038] bg-white/95 dark:bg-[#25141a]/98 shadow-[0_22px_55px_-20px_rgba(76,12,24,0.32)] dark:shadow-[0_22px_55px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl ring-1 ring-black/[0.025] dark:ring-white/[0.04] animate-[rise_0.16s_ease-out_both]">
-                          <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-2.5 border-b border-brand-line/70 dark:border-[#3b2328]">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-muted dark:text-[#c2a8a9]">
-                              {location.trim() ? 'Matching cities' : 'Popular city list'}
-                            </span>
-                            <span className="text-[10px] font-semibold tabular-nums text-brand-muted/80 dark:text-[#c2a8a9]/80">
-                              {filteredCities.length} {filteredCities.length === 1 ? 'result' : 'results'}
-                            </span>
-                          </div>
+                        <div className="absolute z-50 left-0 right-0 bottom-full mb-2 max-h-[min(18rem,45vh)] overflow-hidden rounded-[20px] border border-brand-line/90 dark:border-[#513038] bg-white dark:bg-[#25141a] shadow-[0_22px_55px_-20px_rgba(76,12,24,0.32)] dark:shadow-[0_22px_55px_-20px_rgba(0,0,0,0.6)] ring-1 ring-black/[0.025] dark:ring-white/[0.04] animate-[rise_0.16s_ease-out_both]">
                           {filteredCities.length > 0 ? (
                             <ul role="listbox" aria-label="City suggestions" className="max-h-64 overflow-y-auto overscroll-contain p-1.5 custom-scrollbar">
                               {filteredCities.map((city, index) => {
@@ -1092,9 +1084,6 @@ export default function LandingPage({
                               <p className="mt-1 text-[12px] text-brand-muted dark:text-[#c2a8a9]">Try another spelling or enter an area manually.</p>
                             </div>
                           )}
-                          <div className="border-t border-brand-line/70 dark:border-[#3b2328] px-4 py-2.5 bg-brand-bg/70 dark:bg-[#1b0e12]/70">
-                            <p className="text-[10.5px] text-brand-muted dark:text-[#c2a8a9]">Select a city to fill the location field</p>
-                          </div>
                         </div>
                       )}
                     </div>
