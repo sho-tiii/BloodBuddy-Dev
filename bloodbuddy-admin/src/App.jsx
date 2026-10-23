@@ -1231,15 +1231,6 @@ export default function App() {
                 <p className="mt-1 font-mono text-[10.5px] uppercase tracking-widest text-brand-accent dark:text-[#ff7d8b]">Admin Workspace</p>
               </div>
             )}
-            <button
-              type="button"
-              className={cx('grid h-9 w-9 place-items-center rounded-xl border border-brand-line dark:border-[#3b2328] text-brand-muted hover:text-brand-ink dark:hover:text-white hover:bg-brand-bg2 dark:hover:bg-[#25141a] transition', sidebarCollapsed ? '' : 'lg:ml-auto')}
-              onClick={() => { if (window.innerWidth < 1024) setMobileNavOpen(false); else setSidebarCollapsed(v => !v); }}
-              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              <span className="text-[17px] leading-none">{sidebarCollapsed ? '›' : '‹'}</span>
-            </button>
           </div>
 
           <div className="px-4 pt-6 flex-1 overflow-y-auto custom-scrollbar">
