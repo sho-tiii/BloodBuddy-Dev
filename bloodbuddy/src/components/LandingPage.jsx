@@ -868,13 +868,6 @@ export default function LandingPage({
 
           <div className="max-w-[1160px] mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-[1.15fr_0.85fr] gap-6 md:gap-16 items-center">
             <div className="text-center md:text-left">
-              <span className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-brand-surface/80 dark:bg-[#3a1a20] border border-brand-line dark:border-transparent shadow-sm text-brand-accent dark:text-[#ff7d8b] font-mono text-[11px] md:text-[12.5px] tracking-widest uppercase">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-brand-accent dark:bg-[#ff7d8b] opacity-60 animate-ping"></span>
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-accent dark:bg-[#ff7d8b]"></span>
-                </span>
-                Community blood matching
-              </span>
               <h1 className="font-display font-extrabold text-[38px] sm:text-[52px] md:text-[84px] leading-[1.04] tracking-tight mt-4 md:mt-5 text-balance text-brand-ink dark:text-[#f8ece9]">
                 Find blood when{' '}
                 {['every', 'second', 'counts.'].map((w, i) => (
@@ -956,10 +949,6 @@ export default function LandingPage({
                       <h2 className="mt-1.5 font-display font-extrabold text-[24px] md:text-[32px] leading-[1.1] tracking-tight">Find a donor, fast.</h2>
                       <p className="mt-1.5 text-[13px] md:text-[14px] text-white/80 max-w-[28em] leading-snug">Pick a blood type, add an area, and see verified volunteers who are available right now.</p>
                     </div>
-                    <span className="hidden sm:inline-flex flex-none items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-[11px] font-mono font-bold uppercase tracking-wider">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#7ff0b5] animate-pulse"></span>
-                      ID verified only
-                    </span>
                   </div>
 
                   {/* Step progress */}
@@ -1042,18 +1031,71 @@ export default function LandingPage({
                         onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
                         className="w-full h-14 text-[15px] text-brand-ink dark:text-[#f8ece9] placeholder:text-brand-muted/70 dark:placeholder:text-[#c2a8a9]/60 bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-2xl pl-12 pr-4 focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:ring-4 focus:ring-brand-accent/10 dark:focus:ring-[#ff7d8b]/10 transition" 
                       />
-                      {showCityDropdown && filteredCities.length > 0 && (
-                        <ul className="absolute z-30 w-full mt-2 bg-brand-surface dark:bg-[#25141a] border border-brand-line dark:border-[#3b2328] rounded-2xl shadow-[0_12px_24px_-12px_rgba(111,8,24,0.3)] dark:shadow-[0_12px_24px_-12px_rgba(255,125,139,0.15)] max-h-56 overflow-y-auto custom-scrollbar p-1.5">
-                          {filteredCities.map(city => (
-                            <li 
-                              key={city} 
-                              onMouseDown={() => { setLocation(city); setShowCityDropdown(false); }} 
-                              className="px-3.5 py-2.5 text-[14.5px] font-medium text-brand-ink dark:text-[#f8ece9] hover:bg-brand-bg dark:hover:bg-[#150a0c] hover:text-brand-accent dark:hover:text-[#ff7d8b] cursor-pointer rounded-xl transition-colors"
-                            >
-                              {city}
-                            </li>
-                          ))}
-                        </ul>
+                      {showCityDropdown && (
+                        <div className="absolute z-40 left-0 right-0 mt-2 overflow-hidden rounded-[20px] border border-brand-line/90 dark:border-[#513038] bg-white/95 dark:bg-[#25141a]/98 shadow-[0_22px_55px_-20px_rgba(76,12,24,0.32)] dark:shadow-[0_22px_55px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl ring-1 ring-black/[0.025] dark:ring-white/[0.04] animate-[rise_0.16s_ease-out_both]">
+                          <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-2.5 border-b border-brand-line/70 dark:border-[#3b2328]">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-muted dark:text-[#c2a8a9]">
+                              {location.trim() ? 'Matching cities' : 'Popular city list'}
+                            </span>
+                            <span className="text-[10px] font-semibold tabular-nums text-brand-muted/80 dark:text-[#c2a8a9]/80">
+                              {filteredCities.length} {filteredCities.length === 1 ? 'result' : 'results'}
+                            </span>
+                          </div>
+                          {filteredCities.length > 0 ? (
+                            <ul role="listbox" aria-label="City suggestions" className="max-h-64 overflow-y-auto overscroll-contain p-1.5 custom-scrollbar">
+                              {filteredCities.map((city, index) => {
+                                const isSelected = location === city;
+                                return (
+                                  <li key={city} role="option" aria-selected={isSelected}>
+                                    <button
+                                      type="button"
+                                      onMouseDown={(event) => event.preventDefault()}
+                                      onClick={() => { setLocation(city); setShowCityDropdown(false); }}
+                                      className={`group w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150 ${
+                                        isSelected
+                                          ? 'bg-brand-blush dark:bg-[#3a1a20] text-brand-accent dark:text-[#ff7d8b]'
+                                          : 'text-brand-ink dark:text-[#f8ece9] hover:bg-[#fff2f0] dark:hover:bg-[#321b21]'
+                                      }`}
+                                    >
+                                      <span className={`flex h-8 w-8 flex-none items-center justify-center rounded-lg border transition-colors ${
+                                        isSelected
+                                          ? 'border-brand-accent/20 bg-white dark:bg-[#25141a]'
+                                          : 'border-brand-line/80 bg-brand-bg dark:border-[#493039] dark:bg-[#1b0e12] group-hover:border-brand-accent/30'
+                                      }`}>
+                                        <svg className="h-4 w-4 text-brand-accent dark:text-[#ff7d8b]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                                          <circle cx="12" cy="10" r="2.5" />
+                                        </svg>
+                                      </span>
+                                      <span className="min-w-0 flex-1">
+                                        <span className="block text-[13.5px] font-semibold leading-5">{city}</span>
+                                        <span className="block text-[11px] mt-0.5 text-brand-muted dark:text-[#c2a8a9]">
+                                          {city.includes('(') ? 'City · Province specified' : 'Philippines'}
+                                        </span>
+                                      </span>
+                                      {isSelected ? (
+                                        <svg className="h-4 w-4 flex-none text-brand-accent dark:text-[#ff7d8b]" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" /></svg>
+                                      ) : (
+                                        <svg className="h-4 w-4 flex-none text-brand-muted/40 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100 dark:text-[#c2a8a9]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" /></svg>
+                                      )}
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <div className="px-5 py-8 text-center">
+                              <span className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-bg text-brand-muted dark:bg-[#150a0c] dark:text-[#c2a8a9]">
+                                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path strokeLinecap="round" strokeLinejoin="round" d="m20 20-4-4" /></svg>
+                              </span>
+                              <p className="text-[13px] font-bold text-brand-ink dark:text-[#f8ece9]">No matching city found</p>
+                              <p className="mt-1 text-[12px] text-brand-muted dark:text-[#c2a8a9]">Try another spelling or enter an area manually.</p>
+                            </div>
+                          )}
+                          <div className="border-t border-brand-line/70 dark:border-[#3b2328] px-4 py-2.5 bg-brand-bg/70 dark:bg-[#1b0e12]/70">
+                            <p className="text-[10.5px] text-brand-muted dark:text-[#c2a8a9]">Select a city to fill the location field</p>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
