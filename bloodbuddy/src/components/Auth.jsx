@@ -191,7 +191,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin, // Tinitiyak na babalik sa mismong user app
+            emailRedirectTo: window.location.origin, 
             data: {
               full_name: fullName,
               blood_type: bloodType || "Not provided / I don't know"
@@ -205,7 +205,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
 
       } else if (view === 'forgot_password') {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin // Tinitiyak na babalik sa mismong user app
+          redirectTo: window.location.origin 
         });
         if (resetError) throw resetError;
         if(showToast) showToast('If your email is registered, an 8-digit OTP has been sent to it.', 'info');
@@ -271,6 +271,18 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
     }
   };
 
+  const getPasswordStrength = (pass) => {
+    let score = 0;
+    if (!pass) return 0;
+    if (pass.length >= 8) score += 1;
+    if (/[A-Z]/.test(pass)) score += 1;
+    if (/[a-z]/.test(pass)) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+    return score;
+  };
+  const pwScore = getPasswordStrength(password);
+
   const MailIcon = () => <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>;
   const LockIcon = () => <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
   const UserIcon = () => <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
@@ -332,12 +344,12 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
               <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">First Name <span className="text-brand-accent dark:text-[#ff7d8b]">*</span></label>
               <div className="relative">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><UserIcon /></div>
-                <input type="text" required value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="e.g. Maria" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-4 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
+                <input type="text" required maxLength={50} value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="e.g. Maria" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-4 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
               </div>
             </div>
             <div>
               <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Last Name <span className="text-brand-accent dark:text-[#ff7d8b]">*</span></label>
-              <input type="text" required value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="e.g. Santos" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
+              <input type="text" required maxLength={50} value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="e.g. Santos" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl px-4 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
             </div>
           </div>
         )}
@@ -347,7 +359,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
             <label className="block text-[13px] font-bold text-brand-ink dark:text-[#f8ece9] mb-1.5">Email Address {view==='register'&&<span className="text-brand-accent dark:text-[#ff7d8b]">*</span>}</label>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><MailIcon /></div>
-              <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-4 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
+              <input type="email" required maxLength={100} value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-4 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
             </div>
           </div>
         )}
@@ -438,11 +450,23 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
               </div>
               <div className="relative">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><LockIcon /></div>
-                <input type={showPassword ? "text" : "password"} required value={password} onChange={e=>setPassword(e.target.value)} placeholder={view === 'register' || view === 'update_password' ? "Create a strong password" : "Enter password"} className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-11 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
+                <input type={showPassword ? "text" : "password"} required maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} placeholder={view === 'register' || view === 'update_password' ? "Create a strong password" : "Enter password"} className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-11 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9] hover:text-brand-ink dark:hover:text-[#f8ece9] transition">
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
+
+              {/* Password Strength Indicator */}
+              {(view === 'register' || view === 'update_password') && password.length > 0 && (
+                <div className="mt-2.5 flex items-center gap-1.5 animate-[rise_0.2s_ease_both]">
+                  <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${pwScore >= 1 ? (pwScore < 3 ? 'bg-[#f2606f]' : pwScore < 4 ? 'bg-[#e8b64d]' : 'bg-[#58cf92]') : 'bg-brand-line dark:bg-[#3b2328]'}`}></div>
+                  <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${pwScore >= 3 ? (pwScore < 4 ? 'bg-[#e8b64d]' : 'bg-[#58cf92]') : 'bg-brand-line dark:bg-[#3b2328]'}`}></div>
+                  <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${pwScore >= 5 ? 'bg-[#58cf92]' : 'bg-brand-line dark:bg-[#3b2328]'}`}></div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-brand-muted dark:text-[#c2a8a9] ml-1 w-12">
+                    {pwScore < 3 ? 'Weak' : pwScore < 5 ? 'Good' : 'Strong'}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* CONFIRM PASSWORD INPUT (Visible only for Register and Update Password) */}
@@ -453,7 +477,7 @@ export default function Auth({ onSessionChange, defaultIsLogin = true, selectedD
                 </label>
                 <div className="relative">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9]"><LockIcon /></div>
-                  <input type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Confirm your password" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-11 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
+                  <input type={showConfirmPassword ? "text" : "password"} required maxLength={128} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Confirm your password" className="w-full bg-brand-bg dark:bg-[#150a0c] border-[1.5px] border-brand-line dark:border-[#3b2328] rounded-xl pl-11 pr-11 py-3 text-[15px] text-brand-ink dark:text-[#f8ece9] focus:outline-none focus:border-brand-accent dark:focus:border-[#ff7d8b] focus:shadow-[0_0_0_4px_rgba(164,18,31,0.18)] dark:focus:shadow-[0_0_0_4px_rgba(255,125,139,0.18)] transition-all" />
                   <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted dark:text-[#c2a8a9] hover:text-brand-ink dark:hover:text-[#f8ece9] transition">
                     {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
                   </button>
